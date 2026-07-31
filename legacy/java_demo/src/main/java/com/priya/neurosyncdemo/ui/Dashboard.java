@@ -1,11 +1,5 @@
 package com.priya.neurosyncdemo.ui;
 
-import org.bytedeco.javacv.FrameGrabber;
-import org.bytedeco.javacv.FFmpegFrameGrabber;
-import org.bytedeco.javacv.OpenCVFrameGrabber;
-import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.Java2DFrameConverter;
-import org.bytedeco.javacv.VideoInputFrameGrabber; // windows dshow backend if available
 import com.priya.neurosyncdemo.App;
 import com.priya.neurosyncdemo.api.EmotionAPI;
 import com.priya.neurosyncdemo.api.EmotionResult;
@@ -27,9 +21,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.*;
 import javafx.scene.layout.*;
 import javafx.util.Duration;
-import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
-import org.bytedeco.javacv.OpenCVFrameGrabber;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -62,6 +54,7 @@ public class Dashboard extends BorderPane {
     }
 
     private final String courseId;
+    @SuppressWarnings("unused")
     private final String courseTitle;
 
     private final Label status = new Label("Ready.");
@@ -298,6 +291,7 @@ public class Dashboard extends BorderPane {
 
 
     // ---- camera (lower res/fps to avoid memory issues) ----
+    @SuppressWarnings("resource")
     private void startCamera() {
         if (running.get()) { status.setText("Camera already running."); return; }
 
@@ -307,14 +301,19 @@ public class Dashboard extends BorderPane {
 
         for (int idx : deviceCandidates) {
             // 1) Try OpenCVFrameGrabber
-            try {
-                var g = new org.bytedeco.javacv.OpenCVFrameGrabber(idx);
-                g.setImageWidth(480); g.setImageHeight(360); g.setFrameRate(10);
-                g.start();
-                localGrabber = g;
-                break;
-            } catch (Exception e) {
-                lastEx = e;
+            {
+                org.bytedeco.javacv.OpenCVFrameGrabber g = null;
+                try {
+                    g = new org.bytedeco.javacv.OpenCVFrameGrabber(idx);
+                    g.setImageWidth(480); g.setImageHeight(360); g.setFrameRate(10);
+                    g.start();
+                    localGrabber = g;
+                    g = null; // prevent cleanup since ownership transferred to localGrabber
+                    break;
+                } catch (Exception e) {
+                    lastEx = e;
+                    if (g != null) { try { g.stop(); } catch (Exception ignored) {} try { g.release(); } catch (Exception ignored) {} }
+                }
             }
 
             // 2) Try Windows VideoInputFrameGrabber (DirectShow) - safe check
@@ -329,22 +328,26 @@ public class Dashboard extends BorderPane {
             } catch (Throwable t) { lastEx = (t instanceof Exception) ? (Exception)t : new Exception(t); }
 
             // 3) Try FFmpegFrameGrabber with a platform-appropriate device string
-            try {
-                org.bytedeco.javacv.FFmpegFrameGrabber g;
-                String os = System.getProperty("os.name").toLowerCase();
-                if (os.contains("win")) {
-                    // Use dshow device string (commonly works on Windows)
-                    g = new org.bytedeco.javacv.FFmpegFrameGrabber("video=dshow:0");
-                } else {
-                    // On Linux/macOS, attempt /dev/videoN path for idx (Linux). macOS may not work with this.
-                    g = new org.bytedeco.javacv.FFmpegFrameGrabber("/dev/video" + idx);
+            {
+                org.bytedeco.javacv.FFmpegFrameGrabber fg = null;
+                try {
+                    String os = System.getProperty("os.name").toLowerCase();
+                    if (os.contains("win")) {
+                        // Use dshow device string (commonly works on Windows)
+                        fg = new org.bytedeco.javacv.FFmpegFrameGrabber("video=dshow:0");
+                    } else {
+                        // On Linux/macOS, attempt /dev/videoN path for idx (Linux). macOS may not work with this.
+                        fg = new org.bytedeco.javacv.FFmpegFrameGrabber("/dev/video" + idx);
+                    }
+                    fg.setImageWidth(480); fg.setImageHeight(360); fg.setFrameRate(10);
+                    fg.start();
+                    localGrabber = fg;
+                    fg = null; // prevent cleanup since ownership transferred to localGrabber
+                    break;
+                } catch (Exception e) {
+                    lastEx = e;
+                    if (fg != null) { try { fg.stop(); } catch (Exception ignored) {} try { fg.release(); } catch (Exception ignored) {} }
                 }
-                g.setImageWidth(480); g.setImageHeight(360); g.setFrameRate(10);
-                g.start();
-                localGrabber = g;
-                break;
-            } catch (Exception e) {
-                lastEx = e;
             }
         }
 
@@ -572,6 +575,7 @@ public class Dashboard extends BorderPane {
         catch (Exception e) { status.setText("DB error: " + e.getMessage()); }
     }
 
+    @SuppressWarnings("unchecked")
     private void refreshAnalytics() {
         if (currentSessionId == null) return;
         try {

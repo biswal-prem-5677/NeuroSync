@@ -1,4 +1,4 @@
-# NEUROSYNC AGENTIC AI SAAS TRANSFORMATION EXECUTION PLAN
+# NeuroSync — Agentic Evolution Roadmap
 
 ---
 
@@ -12,7 +12,132 @@
 
 **Key Insight**: Transform from "Feature-rich AI platform" to "Autonomous Career Intelligence System" where user gives goal → system thinks → executes → improves → learns.
 
-2. PHASE-WISE EXECUTION PLAN
+---
+
+## 1.5. AGENTIC INTELLIGENCE LOOP ★ NEW
+
+The core of NeuroSync's agentic architecture is a continuous loop that observes, understands, predicts, decides, acts, and learns. This is what separates an intelligent agent from an advanced analyzer.
+
+### The Loop
+
+```text
+    ┌──────────┐
+    │  OBSERVE  │ ◄──── Collect signals from all sources
+    └─────┬────┘
+          │
+    ┌─────▼────┐
+    │UNDERSTAND │ ◄──── Aggregate into CareerState (derived, stable)
+    └─────┬────┘
+          │
+    ┌─────▼────┐
+    │  PREDICT  │ ◄──── Burnout? Dropout? Interview failure? ★
+    └─────┬────┘
+          │
+    ┌─────▼────┐
+    │  DECIDE   │ ◄──── What action maximizes career outcome?
+    └─────┬────┘
+          │
+    ┌─────▼────┐
+    │   ACT     │ ◄──── Adjust roadmap, send reinforcement, defer application
+    └─────┬────┘
+          │
+    ┌─────▼────┐
+    │  LEARN    │ ◄──── Record StateTransition, recalibrate weights
+    └─────┬────┘
+          │
+          └──────────► Back to OBSERVE (continuous)
+```
+
+### Observation Sources
+
+Every signal entering the agent loop carries an `ObservationSource` tag. The agent reasons over unified CareerState — it doesn't care where signals originated.
+
+```text
+ObservationSource:
+  ┌────────────┐
+  │   RESUME   │ ─── Skill signals from resume parsing
+  ├────────────┤
+  │     JD     │ ─── Role requirement signals
+  ├────────────┤
+  │  FEEDBACK  │ ─── Hired / rejected / interview / ghosted
+  ├────────────┤
+  │  LEARNING  │ ─── Session duration, completion rate, engagement
+  ├────────────┤
+  │  PROJECT   │ ─── Code commits, portfolio activity
+  ├────────────┤
+  │ INTERVIEW  │ ─── Mock/real interview performance
+  ├────────────┤
+  │   MARKET   │ ─── Skill demand trends, salary signals
+  ├────────────┤
+  │   CAMERA   │ ─── Attention, focus (OPTIONAL, consent-required)
+  └────────────┘
+```
+
+### Loop Data Flow
+
+```text
+ObservationSources (8 types)
+        │
+        ▼
+AgentObservation records (source-tagged, timestamped)
+        │
+        ▼
+Human State Intelligence Engine
+  ├── Derive StateObservations (NOT raw emotions)
+  ├── Compute CareerState (unified, stable)
+  └── Run Prediction Layer
+        │
+        ▼
+CareerState
+  ├── confidence_score
+  ├── momentum_score
+  ├── engagement_score
+  ├── consistency_score
+  ├── growth_velocity
+  ├── burnout_risk
+  ├── interview_readiness
+  └── career_readiness
+        │
+        ▼
+Predictions
+  ├── burnout_probability
+  ├── dropout_probability
+  ├── interview_success_probability
+  └── skill_completion_probability
+        │
+        ▼
+Agent Decision Engine
+  ├── Consumes CareerState (NEVER raw signals)
+  ├── Checks prediction thresholds
+  └── Generates actions
+        │
+        ▼
+Actions
+  ├── Roadmap adjustment
+  ├── Workload change
+  ├── Module difficulty change
+  ├── Reinforcement message
+  └── "Apply now" / "Wait" decision
+        │
+        ▼
+StateTransition (recorded)
+  ├── previous_state → new_state
+  ├── reason
+  └── triggered_actions
+        │
+        └──► Loop continues
+```
+
+### Key Principles
+
+1. **CareerState is the decision surface** — raw signals are noisy, CareerState is stable
+2. **Predict before it happens** — burnout, dropout, interview failure are predicted and prevented
+3. **Camera is permanently optional** — system operates at 95% capability without it
+4. **Careers are not emotions** — the agent thinks in confidence/momentum/engagement, not happy/sad/angry
+5. **StateTransitions are agent memory** — the system remembers growth (before → after with reasoning)
+
+## 2. PHASE-WISE EXECUTION PLAN
+
 PHASE 1: FOUNDATION & DATA MIGRATION
 Goal: Establish new tech stack, migrate database schema, create authentication foundation
 
@@ -31,20 +156,20 @@ Description: Create FastAPI project structure with proper directory layout, depe
 Files to Create:
 
 pyproject.toml - Python dependencies
-app/main.py - FastAPI application entry point
-app/config.py - Configuration management
-app/__init__.py - Package initialization
-requirements.txt - Pinned dependencies
-.env.example - Environment variables template
+`app/main.py` - FastAPI application entry point
+`app/config.py` - Configuration management
+`app/__init__.py` - Package initialization
+`requirements.txt` - Pinned dependencies
+`.env.example` - Environment variables template
 .gitignore - Git ignore rules
-Dockerfile - Container definition
-docker-compose.yml - Local development stack
+`Dockerfile` - Container definition
+`docker-compose.yml` - Local development stack
 Output: Runnable FastAPI application with PostgreSQL database accessible via docker-compose
 
 Completion Criteria:
 
 docker-compose up starts successfully
-curl http://localhost:8000/health returns 200 OK
+curl `http://localhost:8000/health` returns 200 OK
 PostgreSQL container is accessible
 All dependencies install without errors
 Task 1.2: Database Schema Migration
@@ -126,7 +251,7 @@ Output: Auto-generated API documentation, passing test suite for auth
 
 Completion Criteria:
 
-http://localhost:8000/docs shows interactive API documentation
+`http://localhost:8000/docs` shows interactive API documentation
 All authentication tests pass (minimum 10 test cases)
 Test database is isolated from development database
 CI can run tests with pytest
@@ -242,6 +367,7 @@ Time-based filtering works
 **Duration**: 4 weeks
 
 **Modules to Build**:
+
 - Core agent loop (goal → plan → execute → observe → learn)
 - Multi-agent orchestration system
 - Memory system (short-term, long-term, vector)
@@ -256,6 +382,7 @@ Time-based filtering works
 **Description**: Implement the fundamental agent execution loop with goal parsing, planning, execution, observation, and learning capabilities.
 
 **Files to Create**:
+
 - `app/agents/core_agent.py` - Base agent class with execution loop
 - `app/agents/planner.py` - Task planning and decomposition
 - `app/agents/executor.py` - Task execution engine
@@ -267,6 +394,7 @@ Time-based filtering works
 **Output**: Working agent loop that can process goals, generate plans, execute tasks, observe results, and learn from feedback
 
 **Completion Criteria**:
+
 - POST `/api/v1/agents/goal` accepts user goal
 - Agent decomposes goal into subtasks
 - Agent executes tasks sequentially
@@ -281,6 +409,7 @@ Time-based filtering works
 **Description**: Build multi-agent system with specialized agents (Career, Resume, Job, Learning, Outreach, Interview) that collaborate on complex goals.
 
 **Files to Create**:
+
 - `app/agents/orchestrator.py` - Agent coordination and routing
 - `app/agents/career_agent.py` - Main career planning agent
 - `app/agents/resume_agent.py` - Resume improvement agent
@@ -293,6 +422,7 @@ Time-based filtering works
 **Output**: Multi-agent system where specialized agents collaborate on user goals
 
 **Completion Criteria**:
+
 - Orchestrator routes goals to appropriate agents
 - Agents can communicate and share context
 - Agents can delegate subtasks to other agents
@@ -307,17 +437,19 @@ Time-based filtering works
 **Description**: Build comprehensive memory system with short-term (session), long-term (user history), and vector (semantic search) memory capabilities.
 
 **Files to Create**:
+
 - `app/memory/base.py` - Base memory interface
 - `app/memory/user_memory.py` - Long-term user memory (profile, history, preferences)
 - `app/memory/session_memory.py` - Short-term session memory (current context)
 - `app/memory/vector_store.py` - Vector memory for semantic search (Qdrant/Weaviate)
 - `app/memory/memory_manager.py` - Memory coordination and retrieval
 - `app/schemas/memory.py` - Memory schemas
-- `docker-compose.yml` - Add Qdrant/Weaviate container
+- ``docker-compose.yml`` - Add Qdrant/Weaviate container
 
 **Output**: Multi-layer memory system enabling context retention and semantic search
 
 **Completion Criteria**:
+
 - Short-term memory stores session context
 - Long-term memory persists user history across sessions
 - Vector memory enables semantic search over past interactions
@@ -332,6 +464,7 @@ Time-based filtering works
 **Description**: Convert existing features into callable tools that agents can use to accomplish tasks (resume analysis, job search, email generation, etc.).
 
 **Files to Create**:
+
 - `app/tools/base.py` - Base tool interface
 - `app/tools/resume_tool.py` - Resume analysis and improvement tool
 - `app/tools/job_tool.py` - Job search and application tool
@@ -343,11 +476,13 @@ Time-based filtering works
 - `app/schemas/tool.py` - Tool schemas
 
 **Files to Reference**:
+
 - Smart Career Advisor modules (resume analyzer, job explorer, roadmap, interview prep)
 
 **Output**: Comprehensive tool library that agents can call to accomplish specific tasks
 
 **Completion Criteria**:
+
 - All tools implement base interface
 - Tools can be called by agents with parameters
 - Tools return structured results
@@ -362,6 +497,7 @@ Time-based filtering works
 **Description**: Build intelligent planning engine that decomposes complex goals into executable tasks with dependencies and priorities.
 
 **Files to Create**:
+
 - `app/planning/goal_parser.py` - Natural language goal parsing
 - `app/planning/task_generator.py` - Task decomposition and generation
 - `app/planning/strategy_engine.py` - Strategy selection and optimization
@@ -373,6 +509,7 @@ Time-based filtering works
 **Output**: Planning engine that can break down complex goals into actionable task sequences
 
 **Completion Criteria**:
+
 - Natural language goals parsed into structured objectives
 - Complex goals decomposed into subtasks
 - Task dependencies identified and resolved
@@ -387,6 +524,7 @@ Time-based filtering works
 **Description**: Implement feedback collection, success tracking, and learning system to enable continuous improvement of agent decisions.
 
 **Files to Create**:
+
 - `app/feedback/user_feedback.py` - User feedback collection
 - `app/feedback/success_tracker.py` - Outcome tracking (job offers, resume improvements)
 - `app/feedback/analyzer.py` - Feedback analysis and pattern detection
@@ -398,6 +536,7 @@ Time-based filtering works
 **Output**: Feedback system that tracks outcomes and enables agent learning
 
 **Completion Criteria**:
+
 - User feedback collected on agent actions
 - Success metrics tracked (job applications, interviews, offers)
 - Feedback patterns analyzed for improvement opportunities
@@ -408,6 +547,7 @@ Time-based filtering works
 ---
 
 ### PHASE 3: AI SYSTEM IMPLEMENTATION
+
 Goal: Replace rule-based logic with ML models, implement local emotion detection, build adaptive decision engine
 
 Duration: 5 weeks
@@ -707,7 +847,7 @@ Files to Create:
 app/cache/redis_client.py - Redis client setup
 app/cache/cache_decorator.py - Cache decorator
 app/services/cache_service.py - Cache service
-docker-compose.yml - Add Redis container
+`docker-compose.yml` - Add Redis container
 config/redis_config.py - Redis configuration
 Output: Redis caching with automatic invalidation
 
@@ -728,7 +868,7 @@ app/broker/producers.py - Message producers
 app/broker/consumers.py - Message consumers
 app/workers/emotion_worker.py - Emotion processing worker
 app/workers/analytics_worker.py - Analytics aggregation worker
-docker-compose.yml - Add RabbitMQ container
+`docker-compose.yml` - Add RabbitMQ container
 config/rabbitmq_config.py - RabbitMQ configuration
 Output: Async processing with message queue
 
@@ -839,7 +979,7 @@ app/core/logging.py - Structured logging setup
 app/middleware/tracing.py - Distributed tracing
 prometheus.yml - Prometheus configuration
 grafana/dashboards/ - Grafana dashboard JSONs
-docker-compose.yml - Add Prometheus and Grafana
+`docker-compose.yml` - Add Prometheus and Grafana
 Output: Complete monitoring stack
 
 Completion Criteria:
@@ -919,7 +1059,9 @@ Developer guide explains setup
 Architecture diagrams included
 ML model training documented
 README is comprehensive
-3. TECH STACK FINALIZATION
+
+## 3. TECH STACK FINALIZATION
+
 Backend:
 
 FastAPI 0.104+ (Python 3.11+)
@@ -976,10 +1118,13 @@ Prometheus for metrics
 Grafana for dashboards
 Jaeger or Zipkin for tracing
 ELK Stack or Loki for logs
-4. SYSTEM ARCHITECTURE
+
+## 4. SYSTEM ARCHITECTURE
 
 ### API Layer
+
 **Responsibilities**:
+
 - HTTP request handling
 - Request validation
 - Response formatting
@@ -988,6 +1133,7 @@ ELK Stack or Loki for logs
 - CORS handling
 
 **Components**:
+
 - FastAPI routers (auth, users, courses, enrollments, sessions, emotion, analytics, agents, planning)
 - Pydantic schemas for request/response validation
 - Dependency injection for database sessions and auth
@@ -995,7 +1141,9 @@ ELK Stack or Loki for logs
 ---
 
 ### Auth Service
+
 **Responsibilities**:
+
 - User authentication (login/signup)
 - JWT token generation and validation
 - Password hashing and verification
@@ -1003,6 +1151,7 @@ ELK Stack or Loki for logs
 - Session management
 
 **Components**:
+
 - JWT encoding/decoding utilities
 - Password hashing with bcrypt
 - Token validation middleware
@@ -1011,7 +1160,9 @@ ELK Stack or Loki for logs
 ---
 
 ### Agent Layer (NEW - AGENTIC AI)
+
 **Responsibilities**:
+
 - Goal parsing and understanding
 - Task planning and decomposition
 - Multi-agent orchestration
@@ -1020,6 +1171,7 @@ ELK Stack or Loki for logs
 - Feedback learning
 
 **Components**:
+
 - Core agent loop (goal → plan → execute → observe → learn)
 - Multi-agent orchestrator
 - Specialized agents (Career, Resume, Job, Learning, Outreach, Interview)
@@ -1031,7 +1183,9 @@ ELK Stack or Loki for logs
 ---
 
 ### AI Service
+
 **Responsibilities**:
+
 - Facial emotion detection
 - Voice emotion detection
 - Emotion fusion
@@ -1041,6 +1195,7 @@ ELK Stack or Loki for logs
 - Batch inference
 
 **Components**:
+
 - Model loading and inference
 - Image/audio preprocessing
 - Emotion fusion logic
@@ -1051,7 +1206,9 @@ ELK Stack or Loki for logs
 ---
 
 ### Tool Layer (NEW - AGENTIC AI)
+
 **Responsibilities**:
+
 - Resume analysis and improvement
 - Job search and application
 - Email generation and sending
@@ -1061,6 +1218,7 @@ ELK Stack or Loki for logs
 - External API integrations
 
 **Components**:
+
 - Tool base interface
 - Specialized tools (resume, job, email, roadmap, interview, emotion)
 - Tool registry and discovery
@@ -1070,7 +1228,9 @@ ELK Stack or Loki for logs
 ---
 
 ### Data Layer
+
 **Responsibilities**:
+
 - Database connection management
 - ORM model definitions
 - CRUD operations
@@ -1079,6 +1239,7 @@ ELK Stack or Loki for logs
 - Vector database operations
 
 **Components**:
+
 - SQLAlchemy models
 - Database session management
 - CRUD operations
@@ -1088,7 +1249,9 @@ ELK Stack or Loki for logs
 ---
 
 ### Analytics Service
+
 **Responsibilities**:
+
 - Emotion distribution aggregation
 - Confidence timeline calculation
 - User progress summaries
@@ -1097,6 +1260,7 @@ ELK Stack or Loki for logs
 - Report generation
 
 **Components**:
+
 - Aggregation queries
 - Time-series calculations
 - Report generation tasks
@@ -1106,7 +1270,9 @@ ELK Stack or Loki for logs
 ---
 
 ### User/Session System
+
 **Responsibilities**:
+
 - User profile management
 - Course enrollment
 - Session tracking
@@ -1115,15 +1281,18 @@ ELK Stack or Loki for logs
 - Agent interaction history
 
 **Components**:
+
 - User CRUD operations
 - Enrollment management
 - Session lifecycle
 - Points calculation
 - Progress tracking
 - Agent conversation history
-5. DATA FLOW (AGENTIC AI SAAS VERSION)
+
+## 5. DATA FLOW (AGENTIC AI SAAS VERSION)
 
 ### Authentication Flow
+
 1. User submits login credentials (React Login.tsx)
 2. Frontend calls POST `/api/v1/auth/login` (auth.ts)
 3. API validates credentials against PostgreSQL (UserStore.authenticateByStudentId equivalent)
@@ -1135,6 +1304,7 @@ ELK Stack or Loki for logs
 ---
 
 ### Agent Goal Execution Flow (NEW - AGENTIC AI)
+
 1. User submits goal (e.g., "Help me get a job as a software engineer") via frontend
 2. Frontend calls POST `/api/v1/agents/goal` (agents.ts)
 3. API validates JWT token
@@ -1157,6 +1327,7 @@ ELK Stack or Loki for logs
 ---
 
 ### Emotion Detection Flow
+
 1. User starts camera in dashboard (Dashboard.tsx → CameraView.tsx)
 2. Frontend captures video frame via WebRTC (useCamera.ts)
 3. Frontend sends frame to POST `/api/v1/emotion/detect` (emotion.ts)
@@ -1172,6 +1343,7 @@ ELK Stack or Loki for logs
 ---
 
 ### Decision Making Flow (UPDATED - AGENTIC AI)
+
 1. Emotion detection returns derived emotion (EmotionMapper.derivedLabel equivalent)
 2. Agent retrieves emotion data from Memory System
 3. Agent loads RL agent model (agent.py)
@@ -1188,6 +1360,7 @@ ELK Stack or Loki for logs
 ---
 
 ### Storage Flow
+
 1. User starts learning session (Dashboard.tsx)
 2. Frontend calls POST `/api/v1/sessions` (sessions.ts)
 3. API creates session record in PostgreSQL (EmotionStore.createSession equivalent)
@@ -1200,13 +1373,16 @@ ELK Stack or Loki for logs
 10. Background worker aggregates session analytics (analytics_worker.py)
 11. Analytics stored in PostgreSQL
 12. Agent performance metrics stored for learning
-6. AI SYSTEM PLAN
+
+## 6. AI SYSTEM PLAN
 
 ### What Replaces Rule-Based Logic
+
 - **EmotionMapper.java** → ML-based emotion fusion model (combines facial + voice)
 - **DecisionEngine.java** → Reinforcement Learning agent (PPO algorithm) + LLM-powered reasoning + Multi-agent orchestration
 
 ### Model Type
+
 - **Emotion Detection**: CNN-based classification (DeepFace architecture)
 - **Voice Emotion**: Wav2Vec 2.0 fine-tuned for emotion
 - **Decision Engine**: Proximal Policy Optimization (PPO) for RL + LLM reasoning (GPT-4/Claude/Llama)
@@ -1216,19 +1392,23 @@ ELK Stack or Loki for logs
 ### Inputs and Outputs
 
 **Emotion Detection Model**:
+
 - Input: Image frame (224x224 RGB) or audio clip (16kHz, 5 seconds)
 - Output: Emotion probabilities (happy, sad, angry, fear, disgust, surprise, neutral, calm, confused)
 
 **Emotion Fusion Model**:
+
 - Input: Facial emotion scores + voice emotion scores
 - Output: Fused emotion scores with confidence
 
 **RL Decision Agent**:
+
 - Input: State vector [current_emotion, confidence, session_duration, user_progress, course_difficulty, recent_performance, goal_context, memory_context]
 - Output: Action recommendation [continue_content, increase_difficulty, decrease_difficulty, suggest_break, show_quiz, offer_hint, call_tool]
 - Reward: User engagement metrics (time spent, completion rate, points earned, goal achievement)
 
 **LLM Agent**:
+
 - Input: User goal + current context + memory retrieval + tool availability
 - Output: Task decomposition + tool selection + reasoning + next action
 - Learning: Feedback from user outcomes (job offers, resume improvements, goal completion)
@@ -1236,18 +1416,21 @@ ELK Stack or Loki for logs
 ### Training Strategy
 
 **Emotion Detection**:
+
 1. Collect labeled dataset from public sources (FER-2013, RAF-DB)
 2. Fine-tune pre-trained DeepFace model on domain-specific data
 3. Validate on held-out test set
 4. Deploy via ONNX for inference
 
 **Voice Emotion**:
+
 1. Use RAVDESS or IEMOCAP dataset
 2. Fine-tune Wav2Vec 2.0 model
 3. Validate on test set
 4. Deploy via ONNX
 
 **RL Agent**:
+
 1. Simulate learning environment with user behavior models
 2. Train PPO agent with reward function based on engagement
 3. Collect real user interaction data
@@ -1255,6 +1438,7 @@ ELK Stack or Loki for logs
 5. Deploy with periodic retraining
 
 **LLM Agent**:
+
 1. Use pre-trained LLM (GPT-4/Claude/Llama)
 2. Fine-tune on domain-specific task decomposition data
 3. Implement few-shot learning for planning
@@ -1262,6 +1446,7 @@ ELK Stack or Loki for logs
 5. Continuously improve from user feedback
 
 ### Inference Flow
+
 1. User emotion data captured (facial + voice)
 2. Preprocessing (normalization, feature extraction)
 3. Model inference (emotion detection → fusion → decision)
@@ -1273,30 +1458,37 @@ ELK Stack or Loki for logs
 9. Log interaction for training data
 10. Update Memory System with new experience
 11. Collect user feedback for learning
-7. MULTI-TENANT SAAS DESIGN
+
+## 7. MULTI-TENANT SAAS DESIGN
+
 User Isolation
 Row-level security via user_id foreign keys
 All queries filtered by current user's ID
 No cross-user data access possible
 Data Separation Strategy
+
 - User-level data: profiles, enrollments, sessions, points, agent interactions, memory
 - Organization-level data: (future) organizations, team enrollments, shared courses
 - Global data: course catalog (read-only for users, writable by admins)
 - Agent memory: Isolated per user with vector embeddings for semantic search
 
 **Organization-Level vs User-Level Data**:
+
 - Phase 1: User-level only (single-tenant SaaS)
 - Phase 2: Add organization_id column to users table
 - Phase 3: Organization-level courses, team analytics, admin roles
 
 **Scaling Approach**:
+
 - Database: Read replicas for analytics queries, connection pooling
 - Vector Database: Qdrant/Weaviate cluster for distributed vector search
 - API: Horizontal scaling via Kubernetes HPA (scale based on CPU/memory)
 - Cache: Redis cluster for distributed caching
 - Queue: RabbitMQ cluster for high-throughput message processing
 - Storage: S3 with lifecycle policies for cost optimization
-8. SECURITY + COMPLIANCE
+
+## 8. SECURITY + COMPLIANCE
+
 Authentication
 JWT access tokens (15-minute expiry)
 JWT refresh tokens (7-day expiry)
@@ -1331,6 +1523,7 @@ Secure flag for cookies (HTTPS only)
 SameSite=Strict for CSRF protection
 Session timeout after inactivity
 AI Ethics Considerations
+
 - User consent for emotion data collection
 - Option to opt-out of emotion tracking
 - Data anonymization for model training
@@ -1339,7 +1532,9 @@ AI Ethics Considerations
 - Human-in-the-loop for critical agent decisions
 - Agent action transparency (show tool calls and reasoning)
 - Memory privacy controls (user can delete memory)
-9. DEPLOYMENT STRATEGY
+
+## 9. DEPLOYMENT STRATEGY
+
 Dev Environment
 Local development with docker-compose
 Hot reload for frontend (Vite)
@@ -1377,25 +1572,29 @@ Cluster Autoscaler: Scale cluster nodes based on pod pending
 Database Connection Pooling: Max 20 connections per pod
 Redis Cluster: For distributed caching
 RabbitMQ Cluster: For high-throughput message processing
-10. TRACKING SYSTEM
+
+## 10. TRACKING SYSTEM
 
 ### Phase Checklist
 
-**Phase 1: Foundation & Data Migration**
+### Phase 1: Foundation & Data Migration
+
 - [ ] Task 1.1: Initialize FastAPI Project
 - [ ] Task 1.2: Database Schema Migration
 - [ ] Task 1.3: JWT Authentication System
 - [ ] Task 1.4: User Management API
 - [ ] Task 1.5: API Documentation & Testing Setup
 
-**Phase 2: Core Business Logic API**
+### Phase 2: Core Business Logic API
+
 - [ ] Task 2.1: Course Management API
 - [ ] Task 2.2: Enrollment System API
 - [ ] Task 2.3: Session Tracking API
 - [ ] Task 2.4: Points Ledger API
 - [ ] Task 2.5: Analytics Aggregation API
 
-**Phase 2.5: Agentic AI System Layer (NEW)**
+### Phase 2.5: Agentic AI System Layer (NEW)
+
 - [ ] Task 2.5.1: Core Agent Loop Implementation
 - [ ] Task 2.5.2: Multi-Agent Orchestration System
 - [ ] Task 2.5.3: Memory System Implementation
@@ -1403,7 +1602,8 @@ RabbitMQ Cluster: For high-throughput message processing
 - [ ] Task 2.5.5: Planning Engine
 - [ ] Task 2.5.6: Feedback Loop System
 
-**Phase 3: AI System Implementation**
+### Phase 3: AI System Implementation
+
 - [ ] Task 3.1: Local Emotion Detection Model
 - [ ] Task 3.2: Voice Emotion Detection
 - [ ] Task 3.3: Emotion Fusion Engine
@@ -1411,7 +1611,8 @@ RabbitMQ Cluster: For high-throughput message processing
 - [ ] Task 3.5: Model Training Pipeline
 - [ ] Task 3.6: Model Serving Infrastructure
 
-**Phase 4: Frontend Implementation**
+### Phase 4: Frontend Implementation
+
 - [ ] Task 4.1: React Application Setup
 - [ ] Task 4.2: Authentication UI
 - [ ] Task 4.3: Course Listing UI
@@ -1419,19 +1620,22 @@ RabbitMQ Cluster: For high-throughput message processing
 - [ ] Task 4.5: Real-time Analytics UI
 - [ ] Task 4.6: Settings and Profile UI
 
-**Phase 5: Scalability & Infrastructure**
+### Phase 5: Scalability & Infrastructure
+
 - [ ] Task 5.1: Redis Caching Layer
 - [ ] Task 5.2: RabbitMQ Message Queue
 - [ ] Task 5.3: Background Task Workers
 - [ ] Task 5.4: Database Optimization
 - [ ] Task 5.5: CDN Integration
 
-**Phase 6: Security, Monitoring & Deployment**
+### Phase 6: Security, Monitoring & Deployment
+
 - [ ] Task 6.1: Security Hardening
 - [ ] Task 6.2: Monitoring and Observability
 - [ ] Task 6.3: CI/CD Pipeline
 - [ ] Task 6.4: Production Deployment
 - [ ] Task 6.5: Documentation
+
 Task Checklist Template
 Task: [Task Name]
 
@@ -1449,6 +1653,7 @@ Functionality works as specified
 Tests pass
 Code follows style guidelines
 No security vulnerabilities
+
 ### Progress Tracking
 
 **Overall Progress**: 0/36 tasks (0%)
@@ -1464,6 +1669,7 @@ No security vulnerabilities
 **Estimated Timeline**: 24 weeks (6 months)
 
 **Team Size Recommendation**: 4-6 developers
+
 - 2 Backend developers (FastAPI, ML, agents, infrastructure)
 - 2 Frontend developers (React, UI/UX, agent interactions)
 - 1 AI/ML Engineer (LLM integration, agent systems, training)
@@ -1471,4 +1677,4 @@ No security vulnerabilities
 
 ---
 
-**End of Agentic AI SaaS Transformation Execution Plan**
+### End of Agentic AI SaaS Transformation Execution Plan

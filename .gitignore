@@ -42,3 +42,23 @@ build/
 *.log
 *.csv
 .env
+
+### Python ###
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Virtualenvs. venv/ also self-ignores (Python 3.11+ writes venv/.gitignore),
+# but name it here so a differently-created env is covered too.
+venv/
+.venv/
+env/
+
+# Model caches — sentence-transformers / HuggingFace / spaCy pull these at
+# runtime; they are large and reproducible from requirements.txt.
+.cache/
+models/
