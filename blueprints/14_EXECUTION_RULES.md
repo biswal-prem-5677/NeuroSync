@@ -53,14 +53,34 @@ anything is usable and puts the frontend at Phase 5. Under that ordering the pro
 
 | # | Milestone | The question it answers | Exit criteria |
 | --- | --- | --- | --- |
-| **M1** | **Trustworthy Core** | "Is the answer correct?" | D1–D5 closed · latency within NFR 11 §1 · typed responses per doc 08 · test suite exists and passes |
-| **M2** | **Usable Product** | "Can a stranger use it?" | File upload · frontend covering the doc 06 core flow · deployed · one non-author completes a real analysis end-to-end |
-| **M3** | **Learning Loop** | "Does it improve itself?" | State layer persists across restarts · feedback recalibrates scoring · reasoning + insights engines · `analyze.py` thin (doc 12 Rules 1/3/5) |
-| **M4** | **Career Intelligence** | "Is it the PRD's vision?" | Market intelligence · trajectory · human state — the PRD 01 §1 promise in full |
+| **M1** | **Trustworthy Core** | "Is the answer correct, and does it survive a restart?" | D1–D5 closed · **state layer + Postgres persistence** · `analyze.py` thin (doc 12 Rules 1/3/5) · typed responses · test suite passes · latency within NFR 11 §1 |
+| **M2** | **Usable Product** | "Can a stranger use it?" | File upload · magic-link auth · rate limiting · 3 screens · deployed · privacy policy + deletion · **5 strangers complete an analysis unaided** |
+| **M3** | **Validated** | "Does the score mean anything?" | 50–100 annotated resume/JD pairs · extraction meets PRD §7 (≥85% recall, ≥90% precision) · score within ±15 points of human raters · regression suite fails on drift |
+| **M4** | **A Business** | "Will anyone pay?" | Business model chosen (doc 15 §23 Q1) · payments · **one paying customer** |
+| **M5** | **Learning Loop** | "Does it improve itself?" | ≥500 recorded outcomes · feedback processor · adaptive scorer · reasoning + insights engines |
 
-**v1.0 ships at the end of M2.** M3 and M4 are versions 1.1 and 2.0. Shipping M2 is what
-converts this from an ambitious project into a product; everything after is improvement on a
-thing that already exists and already has users.
+**v1.0 ships at the end of M2.** Shipping M2 converts this from an ambitious project into a
+product; everything after improves a thing that already exists.
+
+Three changes made after the engineering review (doc 15), and why:
+
+1. **Persistence moved from M3 into M1.** Feedback currently lives in a module-level dict and is
+   destroyed on every restart (doc 15 R3, Critical). The product's central claim — that it learns
+   from outcomes — is false until this is fixed, and every day it runs unfixed discards the
+   scarcest asset the product can accumulate.
+2. **M3 "Validated" is new and blocks monetisation.** The scoring constants were fitted against a
+   *single* resume-JD pair (doc 15 R2, Critical). Until the score is checked against human
+   judgement it is an untested hypothesis, and doc 15 §21 identifies this as the most likely cause
+   of failure. It is deliberately placed *before* M4 so the product cannot be sold on an unvalidated
+   number.
+3. **The learning loop dropped to M5.** It needs ~500 recorded outcomes to do anything but overfit;
+   at PRD §7's 20% feedback rate that is 2,500 analyses, which cannot exist before M2 ships.
+
+**Permanently out of scope** (doc 15 §2, §17): facial and voice emotion detection, burnout
+inference, emotion-adaptive guidance, and the agentic goal-execution layer. Emotion recognition in
+education and workplace contexts is prohibited under EU AI Act Art. 5(1)(f), and "University
+Placement Cells" is a named target persona. These are removed, not deferred — deferred things get
+built.
 
 ### 2.3 Current position
 
@@ -71,15 +91,22 @@ thing that already exists and already has users.
 | D1 scoring miscalibration | 13 §4 | ✅ 2026-07-31 |
 | D2 extraction noise | 13 §4 | ✅ 2026-07-31 |
 | D3 gap cluster mislabeling | 13 §4 | ✅ 2026-07-31 |
-| D4 latency + spaCy warm-up | 13 §4 | ⬜ **next** |
-| D5 API contract drift | 13 §4 | ⬜ |
-| `utils/file_parser.py` + `/analyze-file` | 07 §2.3 | ⬜ |
-| `api/responses.py` typed models | 07 §2.4 | ⬜ |
-| Edge-case hardening | 07 §2.5 | ⬜ |
+| **`state/` + Postgres + Alembic** (closes 15 R3) | 12 §2, 15 §19 | ⬜ **next** |
+| **`analyze.py` thin** — doc 12 Rules 1/3/5 | 12 §4, 13 §3.2 | ⬜ |
 | Test suite | 07 §6.1 | ⬜ |
+| D5 API contract drift → typed responses | 13 §4, 07 §2.4 | ⬜ |
+| `utils/file_parser.py` + `/analyze-file` | 07 §2.3 | ⬜ |
+| D4 latency + spaCy warm-up | 13 §4 | ⬜ |
+| Edge-case hardening | 07 §2.5 | ⬜ |
 
 M1 is the only list being worked. When an item here is closed it is committed, pushed, and
 struck from this table in the same commit.
+
+**Ordering note.** D4 (latency) was previously next. The review reordered it behind persistence
+and the thin-endpoint refactor: D4 is a one-day fix to a cold-start number, while every day the
+state layer is missing, feedback is being destroyed on restart. Fixing latency first would
+optimise a system that is still losing its most valuable data. D4 also sits *inside* the refactor's
+blast radius, so doing it after avoids paying for it twice.
 
 ---
 
@@ -147,7 +174,31 @@ blueprint is amended first and the decision logged in `10_DECISION_LOG.md`.
 Adding a service is a cost, not an achievement. The measure of a good session is capability
 gained per unit of complexity added — sometimes the best change removes code.
 
-### R6 — Documents stay honest
+### R6 — README is part of every change
+
+`README.md` is the only document most people will ever read. If a change alters what the product
+does, how it is run, or what is working, the README is updated **in the same commit**. A stale
+README is a bug, and it was one: until 2026-08-01 it described the frozen `legacy/` Java project.
+
+### R7 — Rules are enforced by hooks, not by memory
+
+A rule that lives only in a document is a suggestion. `.githooks/` makes the checkable ones binding:
+
+| Hook | Enforces | Action |
+| --- | --- | --- |
+| `pre-commit` | `legacy/` frozen · no venv/bytecode · no conflict markers · no credentials · no blob >1 MB | **blocks** |
+| `pre-commit` | code changed without a tracker update | warns |
+| `pre-push` | `legacy/` backstop (survives `--no-verify`) | **blocks** |
+| `pre-push` | `verify_d1` + `noise_probe` when backend code changed | **blocks** |
+
+Install with `bash scripts/setup-dev.sh`. Bypassing (`--no-verify`, `SKIP_GATES=1`) is permitted
+only when the reason is understood and **stated explicitly in the session report**.
+
+The tracker-update check is a warning rather than a block on purpose: a hook that blocks trivial
+commits trains people to bypass it, and a routinely-bypassed hook stops enforcing the rules that
+must never be bypassed.
+
+### R8 — Documents stay honest
 
 - Blueprints 01–12 = intent. Doc 13 = verified fact. Doc 14 = process and destination.
 - On conflict: doc 13 wins on facts, blueprints win on intent. The wrong one is corrected in
@@ -180,3 +231,4 @@ clean · next action named.
 | Date | Change |
 | --- | --- |
 | 2026-08-01 | Created. Destination defined; milestones reordered around user-visible capability (v1.0 = end of M2); `legacy/` frozen; push-per-change and measured-done rules made binding |
+| 2026-08-01 | Engineering review (doc 15) applied. Persistence moved into M1; new M3 "Validated" blocks monetisation; learning loop dropped to M5; emotion/camera/agentic layers removed permanently. R6 (README) and R7 (hook enforcement) added |

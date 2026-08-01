@@ -20,7 +20,7 @@ The only permitted interaction is leaving it alone.
 A change is not done when it works. It is done when it is **committed and pushed**.
 
 ```
-verify → update tracker → commit → push → report
+verify → update tracker → update README if the product changed → commit → push → report
 ```
 
 No session ends with uncommitted work in the tree. No "I'll batch these up." Standing
@@ -28,6 +28,14 @@ authorization: commit and push to `origin/master` without asking, provided §3 p
 
 Exception — stop and ask first if the change touches secrets, deletes user data, rewrites
 published history (`push --force`), or changes global git/system config.
+
+**README is part of the deliverable.** If a change alters what the product does, how it is run,
+or what is working, `README.md` is updated in the same commit. It is the only document most
+people will ever read; a stale README is a bug.
+
+**These rules are enforced by git hooks**, not by memory — `.githooks/pre-commit` and
+`.githooks/pre-push`, installed via `bash scripts/setup-dev.sh`. Never bypass with
+`--no-verify` or `SKIP_GATES=1` without saying so explicitly in the report.
 
 ## 3. Done means measured, not asserted
 

@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+#
+# NeuroSync — pre-push gate.
+#
+# pre-commit is cheap and runs constantly. This one may be slower: pushing is
+# rarer and is the point of no return, because history that reaches the remote
+# is permanent.
+#
+# Bypass when you must:  SKIP_GATES=1 git push     (or --no-verify)
+#
+set -uo pipefail
+
+RED=$'\033[31m'; YLW=$'\033[33m'; GRN=$'\033[32m'; DIM=$'\033[2m'; RST=$'\033[0m'
+note() { printf '%s\n' "${DIM}  → $1${RST}"; }
+ZERO=0000000000000000000000000000000000000000
+
+# Resolve the commit range being pushed, from stdin as git supplies it.
+range=""
+while read -r _lref lsha _rref rsha; do
+    [ "$lsha" = "$ZERO" ] && continue          # branch deletion
+    if [ "$rsha" = "$ZERO" ]; then range="$lsha"; else range="$rsha..$lsha"; fi
+done
+[ -z "$range" ] && { printf '%s\n' "${GRN}pre-push OK${RST} (nothing to check)"; exit 0; }
+
+changed=$(git diff --name-only "$range" 2>/dev/null || true)
+
+# --- R1 backstop: legacy/ must not reach the remote -----------------------
+# pre-commit can be bypassed with --no-verify; this is the second line.
+if printf '%s\n' "$changed" | grep -qE '^legacy/'; then
+    printf '%s\n' "${RED}BLOCKED${RST} CLAUDE.md §1 — commits touching legacy/ cannot be pushed."
+    printf '%s\n' "$changed" | grep -E '^legacy/' | while IFS= read -r f; do note "$f"; done
+    exit 1
+fi
+
+# --- R3: done means measured ----------------------------------------------
+# Only runs when backend code changed, because that is the only thing these
+# probes measure. They load ML models, so they cost ~1-2 minutes.
+if ! printf '%s\n' "$changed" | grep -qE '^core/backend/app/.*\.py$'; then
+    printf '%s\n' "${GRN}pre-push OK${RST} (no backend code in range)"
+    exit 0
+fi
+
+if [ "${SKIP_GATES:-0}" = "1" ]; then
+    printf '%s\n' "${YLW}WARN${RST} regression gates skipped via SKIP_GATES=1."
+    exit 0
+fi
+
+PY="venv/Scripts/python.exe"
+[ -x "core/backend/$PY" ] || PY="venv/bin/python"
+if [ ! -x "core/backend/$PY" ]; then
+    printf '%s\n' "${YLW}WARN${RST} no venv found — regression gates not run."
+    note "Expected core/backend/venv. Push continues."
+    exit 0
+fi
+
+printf '%s\n' "${DIM}Backend changed — running regression gates (~1-2 min)…${RST}"
+gate_failed=0
+
+run_gate() {
+    local label="$1"; shift
+    if ( cd core/backend && "$PY" "$@" >/tmp/neurosync_gate.log 2>&1 ); then
+        printf '%s\n' "${GRN}  PASS${RST} $label"
+    else
+        printf '%s\n' "${RED}  FAIL${RST} $label"
+        tail -20 /tmp/neurosync_gate.log | while IFS= read -r l; do note "$l"; done
+        gate_failed=1
+    fi
+}
+
+run_gate "scoring correctness (verify_d1)" verify_d1.py
+run_gate "extraction noise (noise_probe)"  -m tools.noise_probe
+[ -d core/backend/tests ] && run_gate "test suite (pytest)" -m pytest tests/ -q
+
+if [ "$gate_failed" -ne 0 ]; then
+    printf '\n%s\n' "${RED}Push refused${RST} — a regression gate failed."
+    note "Fix it, or push with SKIP_GATES=1 if the failure is understood and unrelated."
+    exit 1
+fi
+
+printf '%s\n' "${GRN}pre-push OK${RST} — gates green"
+exit 0

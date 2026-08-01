@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+#
+# NeuroSync — pre-commit gate.
+#
+# Mechanically enforces the rules in /CLAUDE.md that can be checked from a
+# staged diff alone. A rule that lives only in a document is a suggestion; this
+# file is what makes it a rule.
+#
+# Install (once per clone):  bash scripts/setup-dev.sh
+# Bypass in a genuine emergency:  git commit --no-verify
+#
+set -uo pipefail
+
+RED=$'\033[31m'; YLW=$'\033[33m'; GRN=$'\033[32m'; DIM=$'\033[2m'; RST=$'\033[0m'
+fail=0
+
+note()  { printf '%s\n' "${DIM}  → $1${RST}"; }
+block() { printf '%s\n' "${RED}BLOCKED${RST} $1"; fail=1; }
+warn()  { printf '%s\n' "${YLW}WARN   ${RST} $1"; }
+
+# Staged files, added/copied/modified only (deletions are always fine).
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+# --- R1: legacy/ is frozen ------------------------------------------------
+# The single most important rule to enforce mechanically: it is the one a
+# well-meaning refactor is most likely to violate by accident.
+if legacy_hits=$(printf '%s\n' "$staged" | grep -E '^legacy/' 2>/dev/null); then
+    block "CLAUDE.md §1 — legacy/ is frozen and must never be modified."
+    printf '%s\n' "$legacy_hits" | while IFS= read -r f; do note "$f"; done
+    note "Revert with: git restore --staged --worktree <file>"
+fi
+
+# --- Build artefacts and environments -------------------------------------
+if junk=$(printf '%s\n' "$staged" | grep -E '(^|/)(venv|\.venv|__pycache__)/|\.pyc$|\.pyo$' 2>/dev/null); then
+    block "Build artefacts or a virtualenv are staged."
+    printf '%s\n' "$junk" | while IFS= read -r f; do note "$f"; done
+    note "These belong in .gitignore, not in history."
+fi
+
+# --- Unresolved merge conflicts -------------------------------------------
+# Only the ref-bearing markers are matched; a bare '=======' is legal Markdown
+# (setext heading) and would false-positive on the blueprints.
+for f in $staged; do
+    [ -f "$f" ] || continue
+    if git show ":$f" 2>/dev/null | grep -qE '^(<{7}|>{7}) '; then
+        block "Unresolved conflict markers in $f"
+    fi
+done
+
+# --- Credentials -----------------------------------------------------------
+# Deliberately narrow patterns. A broad scan that cries wolf gets bypassed,
+# and a bypassed hook enforces nothing.
+secret_re='(-----BEGIN [A-Z ]*PRIVATE KEY-----|aws_secret_access_key[[:space:]]*=[[:space:]]*[A-Za-z0-9/+]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})'
+for f in $staged; do
+    [ -f "$f" ] || continue
+    if git show ":$f" 2>/dev/null | grep -qE "$secret_re"; then
+        block "Possible credential in $f — commit refused."
+        note "If this is a false positive, redact it or use --no-verify with care."
+    fi
+done
+
+# --- Oversized blobs -------------------------------------------------------
+# Model weights and datasets are reproducible from requirements.txt; git is the
+# wrong store for them and they are permanent once pushed.
+for f in $staged; do
+    [ -f "$f" ] || continue
+    size=$(wc -c < "$f" 2>/dev/null | tr -d ' ')
+    if [ -n "${size:-}" ] && [ "$size" -gt 1048576 ]; then
+        block "$f is $((size / 1024))KB (limit 1024KB)."
+        note "Large binaries are permanent once pushed. Use object storage."
+    fi
+done
+
+# --- R3: code changes must move the tracker -------------------------------
+# A warning, not a block: some code commits legitimately change no status
+# (a typo fix, a comment). Blocking here would train people to use
+# --no-verify, which would disable the checks above that must never be
+# bypassed. Visibility is the goal.
+code_changed=$(printf '%s\n' "$staged" | grep -E '^core/.*\.py$' | grep -vE '(^|/)(tools|tests)/' || true)
+docs_changed=$(printf '%s\n' "$staged" | grep -E '^blueprints/13_STATUS_TRACKER\.md$' || true)
+if [ -n "$code_changed" ] && [ -z "$docs_changed" ]; then
+    warn "CLAUDE.md §3 — core code changed but 13_STATUS_TRACKER.md did not."
+    note "If this commit changes verified behaviour, record the measurement there."
+fi
+
+if [ "$fail" -ne 0 ]; then
+    printf '\n%s\n' "${RED}Commit refused.${RST} See /CLAUDE.md and blueprints/14_EXECUTION_RULES.md."
+    exit 1
+fi
+
+printf '%s\n' "${GRN}pre-commit OK${RST}"
+exit 0
