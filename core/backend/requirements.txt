@@ -12,5 +12,9 @@ spacy>=3.7.0
 # Fallback semantic
 scikit-learn>=1.3.0
 
-# Optional
-redis>=5.0.0
+# Persistence (blueprint 09, doc 15 §4) — PostgreSQL in production.
+# SQLite needs no driver: it ships with Python, and is what local development
+# and tools/state_probe.py run against.
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+psycopg[binary]>=3.1.0

@@ -22,6 +22,8 @@
 | Live pipeline | FastAPI `TestClient` — health → analyze → feedback | All HTTP 200; full response captured (see §4) |
 | Taxonomy | JSON parse | version 2.0.0, **294 skills**, **9 categories** |
 
+| Persistence | `tools/state_probe.py` — analyze in one process, restart, read in another | `sql` keeps 1/1 feedback rows and finds the prior analysis; `memory` keeps 0/1 |
+
 **Re-verify command** (from `core/backend/`):
 
 ```bash
@@ -83,6 +85,9 @@ Phase 6: ░░░░░░░░░░░░░░░░░░░░   0%  ⬜
 | 07 P1 | 3 critical bug fixes (DI arg order, `initialize()` call, feedback stub) | All three confirmed fixed in code and at runtime |
 | 07 P1 | 12 dead files deleted | Confirmed absent |
 | 07 P2.1 | Deps + spaCy model + startup test | Confirmed (see §0) |
+| 12 §2 State | `state/base.py` + `state/memory_state.py` + `state/sql_state.py` | Built 2026-08-01. `tools/state_probe.py`: sql retains 1/1 feedback rows and the prior analysis across a real process restart; memory retains 0/1 |
+| 09 §4 | `alembic/` + revision `0001_core_tables` — `users`, `analyses`, `feedback` | `alembic upgrade head` applied cleanly; PostgreSQL DDL verified by offline render (see D6) |
+| 12 §2 State | `db/models.py` + `db/session.py` — SQLAlchemy 2.0 ORM | JSONB on PostgreSQL, JSON on SQLite; one migration serves both |
 
 ### 2.2 Present but undocumented in any blueprint
 
@@ -120,7 +125,7 @@ Therefore doc 07's *"Phase 1 ✅ COMPLETE"* is false against the constitutional 
 | --- | --- |
 | **Rule 1** — IntelligenceEngine is the ONLY orchestrator | `api/v1/endpoints/analyze.py:40-81` calls extractor → cross-doc → semantic engine → gap analyzer → intelligence engine directly |
 | **Rule 3** — API endpoints are THIN | `analyze.py` is 206 lines of pipeline orchestration + manual response assembly |
-| **Rule 5** — StateBackend is the ONLY persistence | Feedback + analysis cache live in module-level dicts (`deps.py:27`, inside `intelligence_engine.py`) |
+| **Rule 5** — StateBackend is the ONLY persistence | ✅ **RESOLVED 2026-08-01** — was: feedback + analysis cache in module-level dicts (`deps.py:27`, inside `intelligence_engine.py`). Both are gone; `app/state/` is the only persistence. See D6 |
 
 ### 3.3 Factual errors inside the docs
 
@@ -289,6 +294,71 @@ differently. Live output:
 Primary cause of the cold spike: spaCy is lazy-loaded on **first request**, not in `lifespan`
 (doc 12 §7 "Startup Sequence" requires warm-up).
 
+### D6 — State was volatile; every recorded outcome died on restart (BLOCKER, severity: critical) — ✅ **RESOLVED 2026-08-01**
+
+Not from the live run — raised by the engineering review as **doc 15 R3** and pulled into M1 by
+doc 14 §2.3. Feedback accumulated in `IntelligenceEngine._feedback_log` (a list on the instance)
+and analyses in `deps.py::_analysis_cache` (a module-level dict). Both are process-local, so the
+product's central claim — that it learns from outcomes — was false: the data was discarded on
+every deploy, crash and restart, and nothing in the API said so.
+
+**Before / after** — same script, both columns produced by running it
+(`tools/state_probe.py`). The "before" is the `memory` backend, which is the pre-change
+behaviour preserved deliberately as the dev/test implementation, not a quotation from an
+earlier note. Each row: one process records an analysis and one feedback outcome, the process
+**exits**, a second process boots and reads before writing anything.
+
+| Measure | Before (`memory`) | After (`sql`) |
+| --- | --- | --- |
+| Feedback rows written before restart | 1 | 1 |
+| Feedback rows visible after restart | **0** | **1** |
+| Prior analysis found (`decision_found`) | **false** | **true** |
+| `/health` reports `state.durable` | false | true |
+| Analysis score, both processes | 77.23 | 77.23 |
+
+**What was built**
+
+| File | Role |
+| --- | --- |
+| `app/state/base.py` (new) | `StateBackend` ABC + the persistence records (`AnalysisRecord`, `FeedbackRecord`, `FeedbackStats`). Doc 12 §4 Rule 5 becomes a reviewable boundary instead of a convention |
+| `app/state/memory_state.py` (new) | The old volatile behaviour, now **named** and logging a warning at startup that data will be lost |
+| `app/state/sql_state.py` (new) | SQLAlchemy 2.0 implementation. PostgreSQL in production, SQLite locally |
+| `app/db/models.py`, `app/db/session.py` (new) | ORM for blueprint 09's `users` / `analyses` / `feedback`; engine settings per dialect. Importable only by `sql_state.py` |
+| `alembic/` + `alembic.ini` (new) | Blueprint 09 §4. Revision `0001_core_tables`. URL from `NEUROSYNC_DATABASE_URL`, never from the ini file |
+| `api/deps.py` | `_analysis_cache` and `cache_analysis()` **deleted**; `get_state_backend()` added. `sql` without a database URL raises rather than silently falling back to volatile storage |
+| `services/intelligence_engine.py` | `_feedback_log` **deleted**. The engine now owns no storage; `record_feedback()` writes through `StateBackend` and takes the `analysis_id` it belongs to |
+| `api/v1/endpoints/feedback.py` | Rebuilds the real `Decision` from the stored analysis instead of a zero-valued stub. Doc 08 §3.2's `decision_found: false` path is kept for genuinely unknown ids |
+| `api/v1/endpoints/health.py` | Reports `state` (backend, durability, row counts) and degrades overall status when the database is unreachable |
+| `tools/state_probe.py` (new) | The measurement above. Each phase is a separate OS process, so nothing survives in module globals — which is exactly how the old design passed single-process tests |
+
+Three tables were built, not doc 09's ten or doc 15 §4's four. `career_profiles` and
+`analysis_history` are dropped (the `analyses` JSONB payload covers them), the four Human-State
+tables were removed permanently by doc 14 §2.2, and `skill_taxonomy_overrides` is **deferred to
+the backlog with a reason**: persisting promoted discoveries would make a promotion permanent,
+while D2's quarantine is calibrated against a per-process lifetime. Full rationale and every
+schema deviation from doc 09: **doc 10 D-007**.
+
+**What is NOT verified.** The PostgreSQL path has never touched a live PostgreSQL server —
+there is none in the development environment, and no Windows wheel exists for an embeddable
+one. What *was* verified is the generated DDL, rendered offline for the PostgreSQL dialect:
+
+```bash
+NEUROSYNC_DATABASE_URL=postgresql+psycopg://user:pass@host/neurosync \
+    ./venv/Scripts/python.exe -m alembic upgrade head --sql
+```
+
+emits valid PostgreSQL — `payload JSONB NOT NULL`, `TIMESTAMP WITH TIME ZONE DEFAULT now()`,
+both foreign keys with their `ON DELETE` actions, and all six indexes. The end-to-end path
+(migration → ORM → endpoints → restart) is verified on SQLite. **First deployment must run
+`alembic upgrade head` against a real instance before this is called proven**; until then, treat
+"works on PostgreSQL" as strongly indicated, not measured.
+
+Re-verify: `./venv/Scripts/python.exe -m tools.state_probe` from `core/backend/`.
+
+No regression: `verify_d1.py` exit 0 (`overall_score` 77.23, 5 gaps, negative controls 38.61
+`weak_fit` / 0.0 `no_fit`) and `tools.noise_probe` exit 0 (0 noise terms, 0 taxonomy writes),
+both re-run after the change.
+
 ### D5 — API contract drift (severity: medium)
 
 | Doc 08 says | Code emits | Location |
@@ -306,12 +376,12 @@ Primary cause of the cold spike: spaCy is lazy-loaded on **first request**, not 
 
 | Blueprint | Surface | Status |
 | --- | --- | --- |
-| 09 (all) | Database — 6 core + 4 Human-State tables, migrations, ORM | ❌ 0 of 10 tables; no DB layer whatsoever |
+| 09 (all) | Database — core tables, migrations, ORM | 🟡 **3 of 3 in-scope tables built** 2026-08-01 (`users`, `analyses`, `feedback`) + Alembic + SQLAlchemy ORM. `skill_taxonomy` deferred; `career_profiles` / `analysis_history` / the 4 Human-State tables cancelled (doc 09 §0) |
 | 06 (all) | Frontend — design system, 4 pages, simulation playground | ❌ `core/frontend/` does not exist |
 | 12 §2 L3.5 | Human State: `human_state_engine`, `agent_decision_engine`, `gamification_engine`, `models/career_state.py`, `models/observation.py`, `endpoints/behavior.py` | ❌ |
 | 08 §5 | 5 behavior endpoints | ❌ |
 | 12 §2 L5–L7 | `reasoning_engine`, `insights_engine`, `feedback_processor`, `adaptive_scorer`, `llm_enhancer`, `market_intelligence_engine`, `career_trajectory_engine`, `decision_engine` | ❌ |
-| 12 §2 State | `state/base.py`, `state/memory_state.py`, `state/redis_state.py` | ❌ |
+| 12 §2 State | `state/base.py`, `state/memory_state.py`, `state/sql_state.py` | ✅ 2026-08-01. `redis_state.py` removed from the architecture (doc 10 D-007) |
 | 12 §2 L2 | `utils/file_parser.py` + `/analyze-file` | ❌ |
 | 03 §5 / 11 §3 | JWT auth, tenant isolation, rate limiting, upload magic-byte checks | ❌ |
 | 03 §9 / 07 §6.3 | Dockerfile, docker-compose, CI/CD, env configs | ❌ |
@@ -335,6 +405,8 @@ answers `do_not_apply` to a 90% match only makes the wrong answer more articulat
 | **1** | Fix D1 — JD alternative-group parsing, parent/child skill resolution, gap-penalty recalibration | 02 §3, §5, §8 | ✅ 2026-07-31 |
 | **1b** | Fix D2 — noise filter for NER + embedding discovery; stop polluting the taxonomy | 02 §3 | ✅ 2026-07-31 |
 | **1c** | Fix D3 — correct gap cluster labels | 02 §5 | ✅ 2026-07-31 |
+| **1d** | Fix D6 — `state/` + StateBackend + Postgres/Alembic; closes doc 15 R3 and doc 12 Rule 5 | 12 §2, 09 §4 | ✅ 2026-08-01 |
+| **1e** | `analyze.py` thin — doc 12 Rules 1 and 3 | 12 §4, §3.2 | ⬜ **next** |
 | **2** | Phase 2.3 `utils/file_parser.py` + `POST /analyze-file` | 07 §2.3, 12 §2 L2 | ⬜ |
 | **3** | Phase 2.4 `api/responses.py` typed models — closes D5 | 07 §2.4, 08 | ⬜ |
 | **4** | Fix D4 — warm spaCy in `lifespan`, fix `/health`, re-measure against NFR | 11 §1, 12 §7 | ⬜ |
@@ -353,6 +425,7 @@ Phases 3.5, 4, 5, 6 remain as documented in doc 07 and are unchanged by this tra
 | 2026-07-31 | D1 resolved — requirement groups + coverage resolution; score 20.85 → 77.23 |
 | 2026-07-31 | D3 resolved — gap reasoning distinguishes in-cluster coverage from adjacent skills |
 | 2026-07-31 | D2 resolved — `SkillNoiseFilter` + discovery quarantine; 9 noise terms → 0, no D1 regression |
+| 2026-08-01 | D6 resolved — `StateBackend` + PostgreSQL/Alembic; feedback surviving a restart 0/1 → 1/1. Doc 12 Rule 5 satisfied. Docs 09 and 12 amended (doc 10 D-007) |
 
 ---
 

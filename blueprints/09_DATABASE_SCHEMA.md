@@ -1,8 +1,38 @@
 # NeuroSync Database Schema Blueprint
 
 **Target Database**: PostgreSQL (v15+)  
-**Object-Relational Mapping (ORM)**: SQLAlchemy (v2.0) / SQLModel  
-**Status**: DESIGN (Pending Implementation)
+**Object-Relational Mapping (ORM)**: SQLAlchemy 2.0  
+**Status**: PARTIALLY IMPLEMENTED — 3 of the 6 core tables are built and migrated (2026-08-01)
+
+---
+
+## 0. What Is Actually Built (2026-08-01)
+
+> Doc 13 owns verified state; this section exists so nobody reads the DDL below as a
+> description of the database. The amendments are logged as **doc 10 D-007**.
+
+| Table | § | Status |
+| --- | --- | --- |
+| `users` | 2.1 | ✅ Built — **without `password_hash`**; auth is magic-link (doc 15 §18) |
+| `analyses` | 2.4 | ✅ Built |
+| `feedback` | 2.5 | ✅ Built — `analysis_id` **nullable**, plus a decision snapshot |
+| `career_profiles` | 2.2 | ❌ **Dropped** (doc 15 §4 R2) — `analyses.payload` + `created_at` covers it |
+| `skill_taxonomy` | 2.3 | ⬜ Deferred — the JSON file is still the source of truth; a `skill_taxonomy_overrides` table sits in the backlog, unbuilt (doc 10 D-007 §2) |
+| `analysis_history` | 2.6 | ❌ **Dropped** (doc 15 §4 R2) — same reason as `career_profiles` |
+| §3 Human-State ×4 | 3.1–3.4 | ❌ **Removed permanently** — doc 14 §2.2 deletes that layer under EU AI Act Art. 5(1)(f) |
+
+**Implementation deviations from the DDL below**, each with its reason in doc 10 D-007:
+
+- Primary keys are `VARCHAR(36)`, not `UUID DEFAULT gen_random_uuid()` — `analysis_id` is a
+  truncated UUID (doc 13 §4 D5) and is not a valid UUID value. This also lets the identical
+  migration run on SQLite, which is what local development and `tools/state_probe.py` use.
+- `NUMERIC(x,y)` score columns are `FLOAT`. The values are model outputs, not money.
+- `feedback.analysis_id` is nullable so doc 08 §3.2's `decision_found: false` response remains
+  storable; `UNIQUE` is retained, and SQL permits repeated NULLs.
+- An `idx_analyses_user_created` composite index was added ahead of need (doc 15 §4).
+
+Live schema: `core/backend/alembic/versions/0001_core_tables.py`.
+Apply with `python -m alembic upgrade head` from `core/backend/`.
 
 ---
 
@@ -256,6 +286,11 @@ CREATE INDEX idx_state_transitions_date ON state_transitions(created_at DESC);
 ---
 
 ## 4. Database Migration Strategy
+
+> ✅ Item 1 is done (2026-08-01): `core/backend/alembic.ini` + `alembic/`, revision `0001`.
+> The URL comes from `NEUROSYNC_DATABASE_URL` via `app.config`, never from `alembic.ini`, so a
+> migration cannot target a different database than the app and no credential is committed.
+> Items 2 and 4 are superseded — see §0.
 
 1. **Alembic integration** will be set up in `core/backend/` to track and apply structural alterations.
 2. **Taxonomy Seed Data**: A Python migration script will read the local `skill_taxonomy.json` file and seed the `skill_taxonomy` table during initial setup.

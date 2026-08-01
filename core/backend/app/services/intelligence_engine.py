@@ -20,6 +20,7 @@ from app.models.domain import (
 from app.models.enums import FitLevel, GapPriority, SkillCategory
 from app.services.requirement_resolver import CoverageResolver
 from app.services.skill_gap_analyzer import GapAnalysisResult
+from app.state.base import FeedbackRecord, FeedbackStats, StateBackend
 from app.utils.skill_taxonomy import SkillTaxonomy
 
 logger = logging.getLogger(__name__)
@@ -105,6 +106,7 @@ class IntelligenceEngine:
         self,
         config: Settings,
         taxonomy: SkillTaxonomy,
+        state: StateBackend,
         resolver: Optional[CoverageResolver] = None,
     ):
         self._config = config
@@ -112,7 +114,10 @@ class IntelligenceEngine:
         # Used only to re-resolve coverage during what-if simulation, so a
         # projected score is computed the same way the real one was.
         self._resolver = resolver or CoverageResolver(config, taxonomy)
-        self._feedback_log: list[dict] = []  # Feedback loop storage
+        # Doc 12 §4 Rule 5. Feedback used to accumulate in a list on this
+        # object, which meant every recorded outcome died with the process
+        # (doc 15 R3). The engine now owns no storage at all.
+        self._state = state
 
     def decide(
         self,
@@ -809,6 +814,7 @@ class IntelligenceEngine:
     def record_feedback(
         self, decision: Decision, outcome: str,
         user_notes: str = "",
+        analysis_id: Optional[str] = None,
     ) -> None:
         """
         Record whether the decision was correct.
@@ -817,27 +823,28 @@ class IntelligenceEngine:
             decision: the Decision that was made
             outcome: 'hired', 'rejected', 'interview', 'ghosted', 'user_disagrees'
             user_notes: optional freeform notes
+            analysis_id: the analysis being judged, or None if it is unknown
+                (doc 08 §3.2 permits feedback with `decision_found: false`)
 
-        This data feeds the future learning loop:
+        The row is written through `StateBackend`, so it survives a restart and
+        is still there when the learning loop is built in M5:
         - Calibrate shortlist_probability curve
         - Adjust scoring weights
         - Improve gap priority accuracy
         """
-        import datetime
-        entry = {
-            "timestamp": datetime.datetime.utcnow().isoformat(),
-            "recommendation": decision.recommendation.value,
-            "score": decision.overall_score,
-            "shortlist_prob": decision.shortlist_probability,
-            "confidence": decision.confidence,
-            "outcome": outcome,
-            "user_notes": user_notes,
-            "critical_gaps": [
-                g.skill for g in decision.scoring.weights_used
-            ] if False else [],  # placeholder for gap tracking
-            "fit_level": decision.fit_level.value,
-        }
-        self._feedback_log.append(entry)
+        import uuid
+
+        self._state.store_feedback(FeedbackRecord(
+            feedback_id=str(uuid.uuid4()),
+            analysis_id=analysis_id,
+            outcome=outcome,
+            user_notes=user_notes,
+            score=decision.overall_score,
+            shortlist_probability=decision.shortlist_probability,
+            confidence=decision.confidence,
+            recommendation=decision.recommendation.value,
+            fit_level=decision.fit_level.value,
+        ))
 
         logger.info(
             "Feedback recorded: outcome=%s, score=%.1f, prob=%.2f, recommendation=%s",
@@ -846,12 +853,13 @@ class IntelligenceEngine:
         )
 
         # Trigger recalibration if enough data
-        if len(self._feedback_log) >= self._config.feedback_recalibrate_threshold:
-            self._trigger_recalibration()
+        recorded = self._state.count_feedback()
+        if recorded >= self._config.feedback_recalibrate_threshold:
+            self._trigger_recalibration(recorded)
 
-    def _trigger_recalibration(self) -> None:
+    def _trigger_recalibration(self, recorded: int) -> None:
         """
-        Placeholder for future learning loop.
+        Placeholder for the M5 learning loop.
         When enough feedback accumulates:
         1. Adjust shortlist_probability curve parameters
         2. Re-weight scoring components
@@ -859,21 +867,11 @@ class IntelligenceEngine:
         """
         logger.info(
             "Recalibration triggered with %d feedback entries (not yet implemented)",
-            len(self._feedback_log),
+            recorded,
         )
-        # Future: logistic regression on feedback_log to calibrate probability
+        # Future: logistic regression on stored feedback to calibrate probability
         # Future: gradient-based weight adjustment for scoring components
 
-    def get_feedback_stats(self) -> dict:
+    def get_feedback_stats(self) -> FeedbackStats:
         """Return feedback statistics for monitoring."""
-        if not self._feedback_log:
-            return {"count": 0, "outcomes": {}}
-
-        from collections import Counter
-        outcomes = Counter(e["outcome"] for e in self._feedback_log)
-        return {
-            "count": len(self._feedback_log),
-            "outcomes": dict(outcomes),
-            "avg_score": sum(e["score"] for e in self._feedback_log) / len(self._feedback_log),
-            "recalibrate_at": self._config.feedback_recalibrate_threshold,
-        }
+        return self._state.get_feedback_stats()

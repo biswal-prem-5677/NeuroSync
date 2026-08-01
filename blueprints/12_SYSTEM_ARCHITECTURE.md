@@ -205,9 +205,16 @@
 
 | Component | File | Owns | Responsibility |
 | --- | --- | --- | --- |
-| **State Backend** | `state/base.py` | Abstract persistence interface | `store_feedback()`, `get_scoring_weights()`, `store_analysis()` |
-| **Memory State** | `state/memory_state.py` | Dev/test implementation | In-memory, no external deps |
-| **Redis State** | `state/redis_state.py` | Production implementation | Shared across pods, horizontal scaling |
+| **State Backend** | `state/base.py` | Abstract persistence interface | `store_analysis()`, `get_analysis()`, `store_feedback()`, `get_feedback_stats()`. `get_scoring_weights()` joins the interface with `AdaptiveScorer` (M5) |
+| **Memory State** | `state/memory_state.py` | Dev/test implementation | In-memory, no external deps, **not durable** |
+| **SQL State** | `state/sql_state.py` | Production implementation | PostgreSQL via SQLAlchemy 2.0 + Alembic; SQLite for local work |
+| **Database** | `db/models.py`, `db/session.py` | ORM + engine | Blueprint 09 tables. Importable **only** by `state/sql_state.py` |
+
+> **Amended 2026-08-01** (doc 10 D-007): this row previously specified
+> `state/redis_state.py` as the production implementation. Redis is a cache and does not make
+> feedback durable, which was the actual defect (doc 15 R3). PostgreSQL replaces it; Redis is
+> removed from the architecture rather than deferred, since nothing now needs shared-across-pods
+> state. Measured by `tools/state_probe.py`.
 
 ---
 
@@ -782,9 +789,12 @@ class Recommendation(str, Enum):
 | **L6 Learning** | `app/services/career_trajectory_engine.py` | 2 | Planned |
 | **L7 External** | `app/services/market_intelligence_engine.py` | 2 | Planned |
 | **L7 External** | `app/services/llm_enhancer.py` | 1 | Build (graceful null) |
-| **State** | `app/state/base.py` | 1 | Build |
-| **State** | `app/state/memory_state.py` | 1 | Build |
-| **State** | `app/state/redis_state.py` | 2 | Planned |
+| **State** | `app/state/base.py` | 1 | ✅ Built 2026-08-01 |
+| **State** | `app/state/memory_state.py` | 1 | ✅ Built 2026-08-01 |
+| **State** | `app/state/sql_state.py` | 1 | ✅ Built 2026-08-01 (replaces `redis_state.py`, doc 10 D-007) |
+| **Database** | `app/db/models.py` | 1 | ✅ Built 2026-08-01 |
+| **Database** | `app/db/session.py` | 1 | ✅ Built 2026-08-01 |
+| **Database** | `alembic/` + `alembic.ini` | 1 | ✅ Built 2026-08-01 (blueprint 09 §4) |
 | **Models** | `app/models/domain.py` | 1 | Build |
 | **Models** | `app/models/enums.py` | 1 | Build |
 | **Data** | `app/data/skill_taxonomy.json` | 1 | Build |

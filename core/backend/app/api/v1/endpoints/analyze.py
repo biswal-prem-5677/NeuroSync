@@ -14,8 +14,9 @@ from app.api.schemas import AnalyzeRequest
 from app.api.deps import (
     get_extractor, get_gap_analyzer,
     get_semantic_engine, get_intelligence_engine,
-    cache_analysis,
+    get_state_backend,
 )
+from app.state.base import AnalysisRecord
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -81,9 +82,6 @@ async def analyze(request: Request, body: AnalyzeRequest):
         )
 
         elapsed = (time.perf_counter() - start) * 1000
-
-        # Cache decision for feedback endpoint
-        cache_analysis(analysis_id, decision)
 
         # Build response
         response = {
@@ -209,6 +207,31 @@ async def analyze(request: Request, body: AnalyzeRequest):
             "extraction_degraded": resume_result.degraded or jd_result.degraded,
             "semantic_available": semantic_engine is not None,
         }
+
+        # Persist through StateBackend (doc 12 §4 Rule 5) so /feedback can find
+        # the real decision later. A storage failure must not lose the user's
+        # analysis: the result is already computed and is still returned.
+        try:
+            get_state_backend().store_analysis(AnalysisRecord(
+                analysis_id=analysis_id,
+                resume_text=body.resume_text,
+                jd_text=body.jd_text,
+                recommendation=decision.recommendation.value,
+                fit_level=decision.fit_level.value,
+                overall_score=decision.overall_score,
+                shortlist_probability=decision.shortlist_probability,
+                confidence=decision.confidence,
+                reasoning=decision.reasoning,
+                semantic_score=decision.scoring.semantic_score,
+                skill_overlap_score=decision.scoring.skill_overlap_score or 0.0,
+                gap_penalty=decision.scoring.gap_penalty or 0.0,
+                scoring_explanation=decision.scoring.explanation,
+                payload=response,
+                processing_time_ms=elapsed,
+            ))
+        except Exception as e:
+            logger.error("[%s] Analysis %s not persisted: %s", rid, analysis_id, e,
+                         exc_info=True)
 
         logger.info("[%s] Analysis complete in %.1fms (score=%.1f, rec=%s)",
                     rid, elapsed, decision.overall_score, decision.recommendation.value)

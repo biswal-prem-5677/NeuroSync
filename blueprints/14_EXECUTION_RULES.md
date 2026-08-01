@@ -91,8 +91,8 @@ built.
 | D1 scoring miscalibration | 13 §4 | ✅ 2026-07-31 |
 | D2 extraction noise | 13 §4 | ✅ 2026-07-31 |
 | D3 gap cluster mislabeling | 13 §4 | ✅ 2026-07-31 |
-| **`state/` + Postgres + Alembic** (closes 15 R3) | 12 §2, 15 §19 | ⬜ **next** |
-| **`analyze.py` thin** — doc 12 Rules 1/3/5 | 12 §4, 13 §3.2 | ⬜ |
+| D6 volatile state — `state/` + Postgres + Alembic (closes 15 R3) | 12 §2, 15 §19 | ✅ 2026-08-01 |
+| **`analyze.py` thin** — doc 12 Rules 1/3 (Rule 5 closed by D6) | 12 §4, 13 §3.2 | ⬜ **next** |
 | Test suite | 07 §6.1 | ⬜ |
 | D5 API contract drift → typed responses | 13 §4, 07 §2.4 | ⬜ |
 | `utils/file_parser.py` + `/analyze-file` | 07 §2.3 | ⬜ |
@@ -231,4 +231,5 @@ clean · next action named.
 | Date | Change |
 | --- | --- |
 | 2026-08-01 | Created. Destination defined; milestones reordered around user-visible capability (v1.0 = end of M2); `legacy/` frozen; push-per-change and measured-done rules made binding |
+| 2026-08-01 | M1 persistence item closed (doc 13 D6, doc 10 D-007). Feedback surviving a restart: 0/1 → 1/1 |
 | 2026-08-01 | Engineering review (doc 15) applied. Persistence moved into M1; new M3 "Validated" blocks monetisation; learning loop dropped to M5; emotion/camera/agentic layers removed permanently. R6 (README) and R7 (hook enforcement) added |

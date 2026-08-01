@@ -28,6 +28,7 @@ async def lifespan(app: FastAPI):
     logger.info("NeuroSync v%s starting (engine v%s)", config.versions.api, config.versions.engine)
 
     # Pre-warm singletons in dependency order:
+    # 0. State backend (opens the database — fails fast if it is unreachable)
     # 1. Taxonomy (loads skill_taxonomy.json)
     # 2. Semantic model (loads SentenceTransformer)
     # 3. Embedding store (indexes all taxonomy skills — requires model)
@@ -35,8 +36,12 @@ async def lifespan(app: FastAPI):
     # 5. Semantic engine (requires model)
     from app.api.deps import (
         get_taxonomy, get_semantic_model, get_embedding_store,
-        get_extractor, get_semantic_engine,
+        get_extractor, get_semantic_engine, get_state_backend,
+        close_state_backend,
     )
+    state = get_state_backend()
+    logger.info("State backend: %s (durable=%s)",
+                state.name, state.health().get("durable"))
     get_taxonomy()
     get_semantic_model()
     get_embedding_store()
@@ -46,6 +51,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    close_state_backend()
     logger.info("NeuroSync shutting down")
 
 

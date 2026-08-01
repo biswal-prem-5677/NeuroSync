@@ -62,3 +62,9 @@ env/
 # runtime; they are large and reproducible from requirements.txt.
 .cache/
 models/
+
+# Local SQLite databases. Production is Postgres (doc 15 §4); a .db file in the
+# tree is somebody's scratch data and must never be committed.
+*.db
+*.sqlite
+*.sqlite3

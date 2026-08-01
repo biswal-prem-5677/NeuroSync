@@ -102,9 +102,15 @@ class Settings(BaseSettings):
     llm_model: str = "gemini-pro"
     llm_temperature: float = 0.3
 
-    # --- State Backend ---
-    state_backend: str = "memory"               # "memory" | "redis"
-    redis_url: Optional[str] = None
+    # --- State Backend (doc 12 §2 Cross-Cutting: State) ---
+    # "memory" — in-process, lost on restart. Fine for a probe, wrong for a user.
+    # "sql"    — durable. PostgreSQL in production, SQLite for local development.
+    #
+    # The default is deliberately the volatile one: nothing in this repository
+    # should assume a database it was not told about. Production sets both vars.
+    state_backend: str = "memory"
+    database_url: Optional[str] = None          # e.g. postgresql+psycopg://user:pass@host/neurosync
+    database_echo: bool = False                 # log every SQL statement (debug only)
 
     # --- Feedback ---
     feedback_enabled: bool = True

@@ -6,9 +6,8 @@ Thread-safe lazy singletons for every core service.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
-from app.config import Settings, get_settings
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -20,27 +19,70 @@ _extractor = None
 _gap_analyzer = None
 _semantic_engine = None
 _intelligence_engine = None
-
-# ─── Analysis Result Cache ────────────────────────────────────────────────────
-# Maps analysis_id → Decision object so the feedback endpoint can reference
-# the actual decision that was made, not a dummy stub.
-_analysis_cache: dict[str, object] = {}
-_ANALYSIS_CACHE_MAX = 500
+_state_backend = None
 
 
-def cache_analysis(analysis_id: str, decision: object) -> None:
-    """Store a Decision in the in-memory cache (bounded size)."""
-    global _analysis_cache
-    if len(_analysis_cache) >= _ANALYSIS_CACHE_MAX:
-        # Evict oldest entry (first inserted)
-        oldest_key = next(iter(_analysis_cache))
-        del _analysis_cache[oldest_key]
-    _analysis_cache[analysis_id] = decision
+# ─── State Backend ───────────────────────────────────────────────────────────
+# Doc 12 §4 Rule 5. This replaced two module-level dicts — an analysis cache
+# here and a feedback list inside IntelligenceEngine — that silently discarded
+# every recorded outcome on restart (doc 15 R3).
+
+def get_state_backend():
+    """Return the StateBackend singleton chosen by `NEUROSYNC_STATE_BACKEND`."""
+    global _state_backend
+    if _state_backend is not None:
+        return _state_backend
+
+    config = get_settings()
+    choice = (config.state_backend or "memory").strip().lower()
+
+    if choice == "sql":
+        if not config.database_url:
+            raise RuntimeError(
+                "NEUROSYNC_STATE_BACKEND=sql requires NEUROSYNC_DATABASE_URL. "
+                "Refusing to fall back to in-memory state: a silent downgrade "
+                "here loses user data without anyone noticing."
+            )
+        from app.state.sql_state import SqlState
+        _state_backend = SqlState(
+            database_url=config.database_url,
+            recalibrate_at=config.feedback_recalibrate_threshold,
+            echo=config.database_echo,
+        )
+    elif choice == "memory":
+        from app.state.memory_state import MemoryState
+        _state_backend = MemoryState(
+            recalibrate_at=config.feedback_recalibrate_threshold,
+        )
+    else:
+        raise ValueError(
+            f"Unknown NEUROSYNC_STATE_BACKEND '{config.state_backend}' "
+            f"(expected 'memory' or 'sql')"
+        )
+
+    _state_backend.initialize()
+    return _state_backend
 
 
-def get_cached_analysis(analysis_id: str) -> Optional[object]:
-    """Retrieve a cached Decision by analysis_id, or None."""
-    return _analysis_cache.get(analysis_id)
+def set_state_backend(backend) -> None:
+    """
+    Install a StateBackend directly, bypassing config.
+
+    For probes and tests that need a throwaway database. Must be called before
+    the first `get_state_backend()`; the caller owns `initialize()`/`close()`.
+    """
+    global _state_backend, _intelligence_engine
+    _state_backend = backend
+    _intelligence_engine = None      # rebuilt against the new backend
+
+
+def close_state_backend() -> None:
+    """Release the state backend at shutdown."""
+    global _state_backend, _intelligence_engine
+    if _state_backend is not None:
+        _state_backend.close()
+        _state_backend = None
+        _intelligence_engine = None
 
 
 # ─── Service Factories ───────────────────────────────────────────────────────
@@ -146,5 +188,6 @@ def get_intelligence_engine():
         _intelligence_engine = IntelligenceEngine(
             config=get_settings(),
             taxonomy=get_taxonomy(),
+            state=get_state_backend(),
         )
     return _intelligence_engine

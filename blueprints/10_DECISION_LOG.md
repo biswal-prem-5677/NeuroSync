@@ -174,3 +174,86 @@ that has no destiny and keeps growing" — complexity accumulating faster than c
 - Every change is committed and pushed on completion; completion requires a measurement.
 - **Status**: ACCEPTED
 - **Owner**: Priyabrata Biswal
+
+---
+
+## 2026-08-01
+
+> From this entry onward decisions carry a stable **D-nnn** id so code comments can
+> cite them. The six entries above predate the convention and are referenced by title.
+
+### D-007 — Persistence Is PostgreSQL Behind `StateBackend`, Not Redis
+
+#### Context
+
+Doc 12 §2 (Cross-Cutting: State) specifies `state/base.py`, `state/memory_state.py` and
+`state/redis_state.py`. None existed. In their absence, feedback accumulated in a list on the
+`IntelligenceEngine` instance and analyses in a module-level dict in `api/deps.py` — so every
+recorded outcome was destroyed on restart (doc 15 R3, Critical). Doc 15 §4 reviewed the
+database design and doc 14 §2.3 moved persistence out of M3 and into **M1**, on the grounds
+that the product's central claim — that it learns from outcomes — is false until this is fixed,
+and every day it runs unfixed discards the scarcest asset the product can accumulate.
+
+#### Reason
+
+- **Redis is a cache; this data is the asset.** `redis_state.py` was specified for sharing state
+  across pods, which is a horizontal-scaling concern the product does not have and will not have
+  for years (doc 15 §4: "no database bottleneck at any plausible MVP scale"). What it does have
+  is data worth keeping. Durability is the requirement; a shared cache does not supply it.
+- **Alembic before the first table.** Doc 09 §4 and doc 15 §13 both say it, and retrofitting
+  migrations is painful and always late. There is now a migration and no `create_all` in the
+  application path.
+- **The interface is what makes it a rule.** `StateBackend` exists so doc 12 §4 Rule 5
+  ("StateBackend is the ONLY persistence") is enforceable by review rather than remembered.
+
+#### What was decided
+
+1. **`state/sql_state.py` replaces `state/redis_state.py`** in doc 12 §2 and §10. Redis is
+   removed from the file map and from `requirements.txt` — nothing imported it.
+2. **Three tables, not doc 09's ten or doc 15's four**: `users`, `analyses`, `feedback`.
+   Doc 15 §4 R1 also lists `skill_taxonomy_overrides`; it is **deferred to the backlog**, not
+   built. Persisting promoted discoveries would make a promotion permanent, and D2's quarantine
+   (2 sightings) is calibrated against a *per-process* lifetime — a noise term that survives
+   quarantine once would then never expire. That trade needs its own measurement, and an
+   unused table with unused backend methods is a half-built feature (doc 14 R4).
+3. **Synchronous SQLAlchemy 2.0.** The service layer is sync CPU-bound code; a single-row INSERT
+   is ~1 ms beside a ~260 ms analysis. An async driver would have forced async-ifying the whole
+   service layer inside a persistence task.
+4. **SQLite is a supported dialect, PostgreSQL is the target.** The same migration and the same
+   `SqlState` run on both. This is not a production option — it is what makes the durable path
+   testable without a server, which is how `tools/state_probe.py` measures restart survival.
+5. **Deviations from doc 09's DDL**, each with a reason, mirrored in `app/db/models.py`:
+   - **`VARCHAR(36)` primary keys, not native `UUID`.** `analysis_id` is a truncated UUID
+     (`"92bb1053-76d"`, doc 13 §4 D5) and is not a valid UUID value. Typing the column as UUID
+     would force a change to the public id format inside the persistence task rather than inside
+     D5, which owns the contract.
+   - **No `users.password_hash`.** Auth is magic-link (doc 15 §18); a `NOT NULL` column no code
+     can fill is a lie in the schema.
+   - **`feedback.analysis_id` is nullable.** Doc 08 §3.2 documents `decision_found: false` for
+     feedback whose analysis is unknown; a `NOT NULL` FK makes that documented response
+     impossible to store. `UNIQUE` is kept — SQL permits repeated NULLs, which gives exactly
+     "one outcome per analysis, plus any number of orphan reports".
+   - **`feedback` carries a decision snapshot.** Calibration statistics must survive deletion of
+     the analysis row under an M2 deletion request, and it removes a join from `/feedback`.
+   - **`career_profiles` and `analysis_history` are dropped** (doc 15 §4 R2) — the `analyses`
+     JSONB payload plus `created_at` covers both. The four Human-State tables die with doc 14
+     §2.2's permanent removal of that layer.
+6. **`state_backend=memory` remains the default, and `sql` refuses to start without
+   `NEUROSYNC_DATABASE_URL`.** No silent fallback: a downgrade to volatile storage that nobody
+   notices is the exact failure this decision exists to end.
+
+#### Tradeoff
+
+- **A managed Postgres is now an operational dependency** for any deployment that matters, at
+  roughly $0–20/month (doc 15 §10). Accepted — doc 15 §4: do not self-host, do not build backup
+  tooling.
+- **The Postgres path is verified by generated DDL, not by a live server** (see doc 13 §4 D6),
+  because no PostgreSQL instance exists in the development environment. First deployment must
+  run `alembic upgrade head` against a real instance before this is called proven.
+
+#### Decision
+
+- **Status**: ACCEPTED
+- **Owner**: Priyabrata Biswal
+- **Measured by**: `./venv/Scripts/python.exe -m tools.state_probe` — memory loses 1 of 1
+  feedback rows across a process restart; sql retains 1 of 1 and finds the prior analysis.

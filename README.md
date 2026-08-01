@@ -53,8 +53,8 @@ prompt-injected by a hostile resume, and produces comparable scores across candi
 
 | | |
 | --- | --- |
-| ✅ Working | 4-layer skill extraction · 3-layer semantic similarity · requirement-group resolution · cluster gap reasoning · scoring, fit and shortlist probability · what-if simulation · 3 REST endpoints |
-| 🚧 Not built | Persistence · authentication · file upload · web UI · tests · deployment |
+| ✅ Working | 4-layer skill extraction · 3-layer semantic similarity · requirement-group resolution · cluster gap reasoning · scoring, fit and shortlist probability · what-if simulation · 3 REST endpoints · **durable storage of analyses and feedback (PostgreSQL)** |
+| 🚧 Not built | Authentication · file upload · web UI · tests · deployment |
 
 Verified state lives in **[`blueprints/13_STATUS_TRACKER.md`](blueprints/13_STATUS_TRACKER.md)** —
 measured by running the system, not by assertion. An independent engineering review, including what
@@ -83,6 +83,27 @@ Open <http://127.0.0.1:8000/docs>.
 
 > On macOS/Linux use `./venv/bin/python` throughout.
 
+### Storage
+
+It runs out of the box with **no database** — and warns you at startup that analyses and
+feedback will be lost when the process stops. That default is deliberate: nothing here assumes
+a database it was not told about.
+
+To keep the data, point it at PostgreSQL (SQLite works too, for local use):
+
+```bash
+export NEUROSYNC_STATE_BACKEND=sql
+export NEUROSYNC_DATABASE_URL=postgresql+psycopg://user:pass@host/neurosync
+
+cd core/backend
+./venv/Scripts/python.exe -m alembic upgrade head   # create the schema
+```
+
+`GET /api/v1/health` reports which backend is live and whether it is durable. If the database
+is unreachable the endpoint says `degraded` rather than `healthy` — persistence failing
+silently is the failure this layer exists to prevent. Schema:
+[`blueprints/09_DATABASE_SCHEMA.md`](blueprints/09_DATABASE_SCHEMA.md).
+
 ### API
 
 | Method | Endpoint | Purpose |
@@ -100,12 +121,17 @@ Correctness is enforced by probes, not by trust. Run from `core/backend/`:
 ```bash
 ./venv/Scripts/python.exe verify_d1.py          # scoring + negative controls
 ./venv/Scripts/python.exe -m tools.noise_probe  # extraction noise
+./venv/Scripts/python.exe -m tools.state_probe  # does data survive a restart?
 ./venv/Scripts/python.exe -m tools.pipeline_probe
 ```
 
 `verify_d1.py` includes **negative controls** — the same resume against roles it does not fit
 (frontend → `weak_fit`, pastry chef → `no_fit`) — so a passing score cannot be achieved by
 inflating everything.
+
+`state_probe` runs each half in a **separate OS process**, so "it survived a restart" means the
+process actually exited. It measures both backends side by side: `memory` loses 1 of 1 feedback
+rows, `sql` keeps 1 of 1.
 
 ---
 
@@ -126,7 +152,10 @@ resume + JD
     │
     ├─ Gaps ───────── clustered, prioritised, reasoned against what you already have
     │
-    └─ Intelligence ─ score · fit · shortlist probability · what-if simulations
+    ├─ Intelligence ─ score · fit · shortlist probability · what-if simulations
+    │
+    └─ State ──────── every analysis and outcome persisted through one boundary
+                      so the learning loop has something to learn from
 ```
 
 Architecture: [`blueprints/12_SYSTEM_ARCHITECTURE.md`](blueprints/12_SYSTEM_ARCHITECTURE.md).
