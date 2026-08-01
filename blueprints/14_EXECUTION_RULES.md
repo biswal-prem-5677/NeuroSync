@@ -102,6 +102,11 @@ built.
 M1 is the only list being worked. When an item here is closed it is committed, pushed, and
 struck from this table in the same commit.
 
+Work that is **blocked on the owner** rather than on engineering — external accounts,
+credentials, legal artifacts, people, and doc 15 §23's open questions — lives in
+[16_OWNER_ACTIONS.md](16_OWNER_ACTIONS.md) (doc 10 D-008). It is not part of the M1 list, and
+nothing in it is a reason to stop working the M1 list.
+
 **Ordering note.** D4 (latency) was previously next. The review reordered it behind persistence
 and the thin-endpoint refactor: D4 is a one-day fix to a cold-start number, while every day the
 state layer is missing, feedback is being destroyed on restart. Fixing latency first would
@@ -232,4 +237,5 @@ clean · next action named.
 | --- | --- |
 | 2026-08-01 | Created. Destination defined; milestones reordered around user-visible capability (v1.0 = end of M2); `legacy/` frozen; push-per-change and measured-done rules made binding |
 | 2026-08-01 | M1 persistence item closed (doc 13 D6, doc 10 D-007). Feedback surviving a restart: 0/1 → 1/1 |
+| 2026-08-01 | Doc 16 created (doc 10 D-008) — owner-blocked work gets a register instead of a session report |
 | 2026-08-01 | Engineering review (doc 15) applied. Persistence moved into M1; new M3 "Validated" blocks monetisation; learning loop dropped to M5; emotion/camera/agentic layers removed permanently. R6 (README) and R7 (hook enforcement) added |

@@ -257,3 +257,53 @@ and every day it runs unfixed discards the scarcest asset the product can accumu
 - **Owner**: Priyabrata Biswal
 - **Measured by**: `./venv/Scripts/python.exe -m tools.state_probe` — memory loses 1 of 1
   feedback rows across a process restart; sql retains 1 of 1 and finds the prior analysis.
+
+---
+
+### D-008 — Owner-Blocked Work Gets Its Own Register
+
+#### Context
+
+Doc 15 §23 raised seven questions that "cannot be assumed" and require the owner. None has been
+answered. Since then the work has accumulated a second, different category of blocker: not
+questions but *doors* — a PostgreSQL instance, a domain, DNS records, an email provider, human
+raters, five strangers. Doc 15 is a dated board review with its own change log; appending live
+operational blockers to it would falsify it as a record of what the board found on 2026-08-01.
+
+The immediate trigger: doc 13 §4 D6 shipped with an honest but permanent-looking caveat — the
+PostgreSQL path is verified as generated DDL, not against a live server, because none exists in
+the development environment. That is not an engineering problem. It is a fifteen-minute signup
+that only the owner can perform, and there was nowhere to write it down.
+
+#### Reason
+
+- **An unanswered question is not free.** It is either a silent assumption or unsequenced work.
+  Doc 15 §23 records the questions but not what each one is currently costing, and not what
+  assumption is being made in its absence. Both belong next to the question.
+- **Blockers were living in session reports.** A report is read once. A register is checked.
+- **Doc 14 R3 requires blocked items to stay honest**: "a blocked item left honest is worth more
+  than a green tick that lies." Honesty needs an address.
+- **Decisions made unilaterally need a review surface.** Doc 14 R4 says finish the item rather
+  than block on the owner, which means engineer-made calls accumulate. They are logged here, but
+  a log is chronological and grows; the owner needs a short list of *currently unconfirmed* ones.
+
+#### Tradeoff
+
+- **A sixteenth blueprint document**, in a project whose named risk is unbounded growth
+  (doc 14 §1). Accepted on the grounds that this one *reduces* work rather than adding it: it
+  has no implementation, and it exists to close questions rather than open them. It is a
+  living register, not a specification — the first document here that is expected to shrink.
+- **Two places now discuss owner questions.** Mitigated by precedence: doc 15 §23 keeps the
+  original wording as the board asked it; doc 16 §4 owns the *status* of each answer and points
+  back. Same rule as doc 13 vs the blueprints.
+
+#### Decision
+
+- [16_OWNER_ACTIONS.md](16_OWNER_ACTIONS.md) is created and owns everything blocked on the
+  owner: external accounts and credentials, legal artifacts, people, and open questions.
+- Doc 15 §23 remains the canonical wording of Q1–Q7 and is **not** edited to add answers; doc 16
+  §4 tracks their status.
+- §6 of doc 16 lists engineer-made decisions awaiting confirmation. **Silence is acceptance** —
+  otherwise the register becomes a second blocking queue, which is the thing it exists to drain.
+- **Status**: ACCEPTED
+- **Owner**: Priyabrata Biswal

@@ -168,7 +168,7 @@ Algorithms: [`blueprints/02_INTELLIGENCE_BLUEPRINT.md`](blueprints/02_INTELLIGEN
 ```
 core/backend/     the product — FastAPI, Python 3.13
 core/frontend/    not built yet
-blueprints/       01-15: specification, verified status, review, execution rules
+blueprints/       01-16: specification, verified status, review, execution rules
 scripts/          developer setup
 .githooks/        enforced rules (see below)
 legacy/           FROZEN — a prior academic project. Not part of this product.

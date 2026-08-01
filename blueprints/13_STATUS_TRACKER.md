@@ -353,6 +353,9 @@ both foreign keys with their `ON DELETE` actions, and all six indexes. The end-t
 `alembic upgrade head` against a real instance before this is called proven**; until then, treat
 "works on PostgreSQL" as strongly indicated, not measured.
 
+Closing this gap needs a PostgreSQL URL, which is an owner action, not an engineering one:
+[16_OWNER_ACTIONS.md](16_OWNER_ACTIONS.md) **A1**.
+
 Re-verify: `./venv/Scripts/python.exe -m tools.state_probe` from `core/backend/`.
 
 No regression: `verify_d1.py` exit 0 (`overall_score` 77.23, 5 gaps, negative controls 38.61

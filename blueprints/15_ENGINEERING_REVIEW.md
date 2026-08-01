@@ -927,6 +927,10 @@ score against human judgement, and ship 3 screens.**
 
 **Not assumed. Required from the owner.**
 
+> **Status is tracked in [16_OWNER_ACTIONS.md](16_OWNER_ACTIONS.md) §4** (added 2026-08-01, doc
+> 10 D-008), together with what assumption is being made in each answer's absence. The wording
+> below is the board's and is not edited as answers arrive.
+
 | # | Question | Blocks | Why it cannot be assumed |
 | --- | --- | --- | --- |
 | **Q1** | **What is the business model?** Free/paid tiers, price, who pays | §15, Phase 4, all unit economics | Nothing in 8,957 doc-lines answers it. It changes the product, not just the pricing page |
