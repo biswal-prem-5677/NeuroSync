@@ -29,6 +29,9 @@ If you only do three things, do these, in this order:
 
 Everything else in this document can wait.
 
+**§5 is what to actually run** — the acceptance test for #1, and the one test I cannot run for
+you: does the score look right on *your* resume against a job you would really apply for.
+
 ---
 
 ## 1. Blocking now — M1 (Trustworthy Core)
@@ -69,8 +72,19 @@ share a real one at all, create a throwaway database whose credentials you rotat
 
 ### A2 — Nothing else in M1 is blocked on you
 
-The remaining M1 items — thinning `analyze.py`, the test suite, typed responses (D5), the file
-parser, the latency fix — are ordinary engineering and I will keep working them in order.
+These are open, known, and mine. Listed so you can see they are tracked rather than forgotten:
+
+| Item | State | Where |
+| --- | --- | --- |
+| `analyze.py` is 206 lines of pipeline orchestration in an endpoint that should be under 50 | next up | doc 13 §3.2, doc 12 Rules 1 and 3 |
+| **No test suite exists.** `core/backend/tests/` is absent, so the pre-push hook's pytest gate is written but **never fires** — two of three gates are live, not three | open | doc 07 §6.1 |
+| D5 API contract drift — responses are hand-built dicts, so doc 08 is enforced by nothing | open | doc 13 §4 D5 |
+| **D4 latency: `/analyze` cold is 9.4 s against a 2 s budget** (warm is ~180 ms). spaCy loads on first request instead of at startup | open, sequenced after the refactor | doc 13 §4 D4 |
+| `analysis_id` is a truncated UUID that keeps its hyphen (`"92bb1053-76d"`) — not a valid UUID. This is why the database uses `VARCHAR(36)` keys | open, belongs to D5 | doc 13 §4 D5 |
+| **Doc 07 is still stale** — it claims Phase 1 complete and Phase 2 at 0%, both false. Reconciling it is step 0 of the execution order and has never been done | open | doc 13 §6 step 0 |
+| `app/config.py` does not read a `.env` file | open, trivial | tied to A1 |
+
+None of these needs anything from you. They are here so the register is the whole picture.
 
 ---
 
@@ -141,7 +155,76 @@ starts means rework; answering it now costs nothing.
 
 ---
 
-## 5. Small local-environment items (optional, low value)
+## 5. What to test yourself
+
+Two different things: **accepting A1** (a specific pass/fail), and **judging the product**
+(only you can do this, and it is worth more than it looks).
+
+### 5.1 Accepting A1 — the PostgreSQL verification
+
+This is the exact test that turns doc 13 D6 from "strongly indicated" into "measured". Run it
+once you have a URL. From `core/backend/`:
+
+```bash
+export NEUROSYNC_STATE_BACKEND=sql
+export NEUROSYNC_DATABASE_URL='postgresql+psycopg://user:pass@host:5432/dbname'
+
+./venv/Scripts/python.exe -m alembic upgrade head
+```
+
+**Pass**: it prints `Running upgrade -> 0001, core tables` and exits 0. Three tables and six
+indexes now exist.
+**Fail**: any traceback. Send me the whole thing — that is the outcome I most need to see, and
+it is exactly what the offline DDL check cannot catch.
+
+Then confirm data actually survives a restart on that database:
+
+```bash
+./venv/Scripts/python.exe -m tools.state_probe --backend sql
+```
+
+**Pass**: the table prints `sql  True  1  1  True` and `VERDICT: PASS`.
+
+> The probe defaults to a throwaway SQLite file when you give it no URL, which is how I ran it.
+> With `NEUROSYNC_DATABASE_URL` exported it uses your real database instead — it writes one
+> analysis row and one feedback row and does not clean them up, so use a scratch database.
+
+### 5.2 Judging the product — the test I cannot run
+
+Run it against **your own resume and a job you would actually apply for**:
+
+```bash
+./venv/Scripts/python.exe -m uvicorn app.main:app --reload
+# then open http://127.0.0.1:8000/docs and POST /api/v1/analyze
+```
+
+First request is slow (~9 s cold — that is D4, known). Then read the output and answer three
+questions honestly:
+
+1. **Is the score believable?** Not "is it high" — is it roughly where a recruiter would put you?
+2. **Are the gaps the right gaps?** Would you actually learn those first?
+3. **Does the reasoning sound like it understood the JD**, or like it pattern-matched?
+
+Any "no" here is worth more than a hundred green tests, and it is early evidence for or against
+the thing M3 exists to settle (A9). Tell me which of the three failed and on what input — I will
+record it in doc 13 §4 as a defect with your input as the reproduction case.
+
+**Do not use someone else's resume for this** without their consent — see A7.
+
+### 5.3 Quick health check on what already exists
+
+```bash
+./venv/Scripts/python.exe verify_d1.py          # expect exit 0, score 77.23
+./venv/Scripts/python.exe -m tools.noise_probe  # expect 0 noise terms
+./venv/Scripts/python.exe -m tools.state_probe  # expect VERDICT: PASS
+```
+
+All three passed on 2026-08-01. If any fails on your machine, that is an environment difference
+worth knowing about before we build further on it.
+
+---
+
+## 6. Small local-environment items (optional, low value)
 
 These are papercuts. Fix them if you feel like it; none blocks anything.
 
@@ -153,7 +236,7 @@ These are papercuts. Fix them if you feel like it; none blocks anything.
 
 ---
 
-## 6. Decisions I made for you — please confirm or overrule
+## 7. Decisions I made for you — please confirm or overrule
 
 I made these because blocking on them would have stopped work, and doc 14 R4 says finish the
 item. Each is reversible and each is logged. **Silence = accepted**; say the word and I will
@@ -179,7 +262,7 @@ that owns them, which doc 14 R5 says is not allowed to persist):
 
 ---
 
-## 7. Answered / closed
+## 8. Answered / closed
 
 *(empty — nothing has been answered yet)*
 
@@ -188,8 +271,9 @@ that owns them, which doc 14 R5 says is not allowed to persist):
 
 ---
 
-## 8. Change log
+## 9. Change log
 
 | Date | Change |
 | --- | --- |
 | 2026-08-01 | Created after the M1 persistence item landed. 12 owner actions (A1–A12), doc 15 §23's 7 open questions carried forward, 5 engineer-made decisions listed for confirmation |
+| 2026-08-01 | Added §5 (what to test yourself, including the A1 acceptance test) and expanded A2 into the full list of open engineering defects, so the register is the whole picture rather than only the blocked part |

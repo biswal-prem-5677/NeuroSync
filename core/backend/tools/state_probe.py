@@ -149,15 +149,35 @@ def _migrate(database_url: str, env: dict[str, str]) -> None:
     print("  migration: alembic upgrade head OK")
 
 
+def _redact(url: str) -> str:
+    """Credentials must not reach a terminal or a pasted log."""
+    if "@" not in url:
+        return url
+    scheme, _, rest = url.partition("://")
+    _credentials, _, host = rest.rpartition("@")
+    return f"{scheme}://***@{host}"
+
+
 def measure(backend: str, workdir: Path) -> dict:
     """Run analyze → restart → feedback for one backend."""
     env = {**os.environ, "NEUROSYNC_STATE_BACKEND": backend}
     workdir.mkdir(parents=True, exist_ok=True)
 
     if backend == "sql":
-        # Forward slashes: a Windows backslash path is not a valid SQLAlchemy URL.
-        db_path = (workdir / "probe.db").as_posix()
-        database_url = f"sqlite:///{db_path}"
+        # An exported NEUROSYNC_DATABASE_URL wins. That is how this probe becomes
+        # the acceptance test for a real PostgreSQL instance (doc 16 §5.1) rather
+        # than only ever proving SQLite. Without one, fall back to a throwaway
+        # SQLite file so the probe still runs anywhere with no setup.
+        database_url = os.environ.get("NEUROSYNC_DATABASE_URL")
+        if database_url:
+            print(f"  database: {_redact(database_url)} (from the environment)")
+            print("  NOTE: this writes 1 analysis + 1 feedback row and does not "
+                  "clean up — use a scratch database.")
+        else:
+            # Forward slashes: a Windows backslash path is not a valid SQLAlchemy URL.
+            db_path = (workdir / "probe.db").as_posix()
+            database_url = f"sqlite:///{db_path}"
+            print(f"  database: throwaway SQLite ({db_path})")
         env["NEUROSYNC_DATABASE_URL"] = database_url
         _migrate(database_url, env)
 
