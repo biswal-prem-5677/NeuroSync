@@ -322,6 +322,10 @@ Primary cause of the cold spike: spaCy is lazy-loaded on **first request**, not 
 
 ## 6. Execution Order (ACTIVE)
 
+> **Sequencing is owned by [14_EXECUTION_RULES.md](14_EXECUTION_RULES.md) §2.** Steps 1–5 below are
+> milestone **M1 — Trustworthy Core**; step 6 belongs to **M3**. The frontend and file upload move
+> ahead of the intelligence layers, because v1.0 ships at the end of **M2 — Usable Product**.
+
 Rationale: **correctness before expansion.** Building reasoning and insights layers on a scorer that
 answers `do_not_apply` to a 90% match only makes the wrong answer more articulate.
 

@@ -128,3 +128,49 @@ A live pipeline run (2026-07-27) scored a senior candidate holding Python, FastA
 - New sub-phases **2.6 (Correctness Fixes)** and **2.7 (Latency & Warm-Up)** are inserted into doc 07 and block Phase 3.
 - **Status**: ACCEPTED
 - **Owner**: Priyabrata Biswal
+
+---
+
+### Milestones Are Defined by User-Visible Capability, Not by Layer
+
+#### Context
+
+Doc 07 orders work by architectural layer: six backend phases, with the frontend at Phase 5
+and production concerns at Phase 6. Under that ordering the project reaches "80% of phases
+complete" while remaining 0% usable by anyone who is not running Python locally. The risk
+named by the project owner (2026-08-01) is that NeuroSync becomes "a random ambitious project
+that has no destiny and keeps growing" — complexity accumulating faster than capability.
+
+#### Reason
+
+- **Layer-ordered plans have no shipping point**: nothing in doc 07's sequence produces a
+  moment where the product is usable. Phases 3, 3.5 and 4 each add intelligence to a system
+  that still cannot be opened in a browser.
+- **Interest is not a priority signal**: every remaining phase is genuinely interesting, which
+  makes "what next?" unanswerable without an external criterion. User-visible capability is
+  that criterion.
+- **Feedback requires users**: the PRD's learning loop (01 §1, "learns from every decision")
+  cannot be validated without real decisions from real people, which requires shipping first.
+- **The vision is the destination, not the deliverable**: market intelligence, trajectory
+  simulation and human-state modelling are the reason to build v1.0 — not part of it.
+
+#### Tradeoff
+
+- **The intelligence layers slip behind the frontend.** Doc 07's Phase 3 (reasoning, insights,
+  state) now falls after the UI in M3. Accepted: a correct, explainable score in a browser is
+  more valuable than an elaborate reasoning engine reachable only by `curl`.
+- **Doc 07's phase numbering no longer matches execution order.** Mitigated by precedence:
+  doc 07 keeps its phases as *work packages*; doc 14 owns *sequencing*.
+
+#### Decision
+
+- [14_EXECUTION_RULES.md](14_EXECUTION_RULES.md) is created and owns the destination and
+  milestone sequence: **M1 Trustworthy Core → M2 Usable Product → M3 Learning Loop →
+  M4 Career Intelligence**.
+- **v1.0 ships at the end of M2**, defined as: a non-author, on a deployed URL, completing a
+  real resume-vs-JD analysis and receiving a decision they trust.
+- Doc 07 phases are retained as work packages; doc 14 §2.2 governs order.
+- `legacy/java_demo/` is declared frozen — out of scope permanently, never read or modified.
+- Every change is committed and pushed on completion; completion requires a measurement.
+- **Status**: ACCEPTED
+- **Owner**: Priyabrata Biswal
