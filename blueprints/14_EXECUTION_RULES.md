@@ -92,12 +92,12 @@ built.
 | D2 extraction noise | 13 §4 | ✅ 2026-07-31 |
 | D3 gap cluster mislabeling | 13 §4 | ✅ 2026-07-31 |
 | D6 volatile state — `state/` + Postgres + Alembic (closes 15 R3) | 12 §2, 15 §19 | ✅ 2026-08-01 |
-| **`analyze.py` thin** — doc 12 Rules 1/3 (Rule 5 closed by D6) | 12 §4, 13 §3.2 | ⬜ **next** |
-| Test suite | 07 §6.1 | ⬜ |
-| D5 API contract drift → typed responses | 13 §4, 07 §2.4 | ⬜ |
-| `utils/file_parser.py` + `/analyze-file` | 07 §2.3 | ⬜ |
-| D4 latency + spaCy warm-up | 13 §4 | ⬜ |
-| Edge-case hardening | 07 §2.5 | ⬜ |
+| `analyze.py` thin — doc 12 Rules 1/3 (Rule 5 closed by D6) | 12 §4, 13 §3.2 | ✅ 2026-08-16 |
+| Test suite — `core/backend/tests/` (11 tests pass) | 07 §6.1 | ✅ 2026-08-16 |
+| D5 API contract drift → typed response models | 13 §4, 07 §2.4 | ✅ 2026-08-16 |
+| `utils/file_parser.py` + `/analyze-file` (PDF/DOCX/TXT) | 07 §2.3 | ✅ 2026-08-16 |
+| D4 latency + spaCy warm-up in `lifespan` | 13 §4 | ✅ 2026-08-16 |
+| Edge-case hardening — sanitization + junk detection | 07 §2.5 | ✅ 2026-08-16 |
 
 M1 is the only list being worked. When an item here is closed it is committed, pushed, and
 struck from this table in the same commit.

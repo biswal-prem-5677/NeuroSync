@@ -45,7 +45,8 @@ async def lifespan(app: FastAPI):
     get_taxonomy()
     get_semantic_model()
     get_embedding_store()
-    get_extractor()
+    extractor = get_extractor()
+    extractor.warm_up()
     get_semantic_engine()
     logger.info("All core services initialized — system ready")
 

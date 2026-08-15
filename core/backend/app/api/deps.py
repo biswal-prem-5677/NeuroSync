@@ -181,7 +181,11 @@ def get_semantic_engine():
 
 
 def get_intelligence_engine():
-    """Return the IntelligenceEngine singleton (central decision brain)."""
+    """Return the IntelligenceEngine singleton (central decision brain).
+
+    Now receives all pipeline services so it can orchestrate the full
+    analysis pipeline (doc 12 Rule 1), not just the decision step.
+    """
     from app.services.intelligence_engine import IntelligenceEngine
     global _intelligence_engine
     if _intelligence_engine is None:
@@ -189,5 +193,8 @@ def get_intelligence_engine():
             config=get_settings(),
             taxonomy=get_taxonomy(),
             state=get_state_backend(),
+            extractor=get_extractor(),
+            gap_analyzer=get_gap_analyzer(),
+            semantic_engine=get_semantic_engine(),
         )
     return _intelligence_engine

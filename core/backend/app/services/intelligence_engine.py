@@ -20,7 +20,7 @@ from app.models.domain import (
 from app.models.enums import FitLevel, GapPriority, SkillCategory
 from app.services.requirement_resolver import CoverageResolver
 from app.services.skill_gap_analyzer import GapAnalysisResult
-from app.state.base import FeedbackRecord, FeedbackStats, StateBackend
+from app.state.base import AnalysisRecord, FeedbackRecord, FeedbackStats, StateBackend
 from app.utils.skill_taxonomy import SkillTaxonomy
 
 logger = logging.getLogger(__name__)
@@ -87,19 +87,33 @@ class Decision(BaseModel):
 # INTELLIGENCE ENGINE
 # =========================================================================
 
+class AnalysisResult(BaseModel):
+    """Full analysis output — the response payload returned by /analyze.
+
+    Built by IntelligenceEngine.analyze(), which is the ONLY orchestrator
+    (doc 12 Rule 1). The endpoint is thin: validate → engine.analyze() → return.
+    """
+    analysis_id: str
+    decision: Decision
+    response: dict = Field(default_factory=dict)
+    processing_time_ms: float = 0.0
+
+
 class IntelligenceEngine:
     """
-    Central decision engine. Takes all analysis components and produces
-    a single Decision with recommendation, confidence, and improvement path.
+    Central decision engine AND pipeline orchestrator (doc 12 Rule 1).
+
+    Two entry points:
+      - analyze()  — full pipeline: texts → extraction → semantic → gap → decision → response dict
+      - decide()   — decision only: pre-computed components → Decision (used by analyze and probes)
 
     Pipeline:
-    1. Compute composite score (semantic + skill overlap - gap penalty)
-    2. Determine fit level
-    3. Estimate shortlist probability
-    4. Simulate gap fixes (what-if analysis)
-    5. Rank improvements by ROI
-    6. Generate multi-factor reasoning
-    7. Output Decision
+    1. Extract skills from resume + JD (4-layer hybrid)
+    2. Cross-document semantic skill matching
+    3. Semantic similarity
+    4. Gap analysis
+    5. Decision (scoring + fit + simulation + reasoning)
+    6. Assemble response dict
     """
 
     def __init__(
@@ -108,6 +122,9 @@ class IntelligenceEngine:
         taxonomy: SkillTaxonomy,
         state: StateBackend,
         resolver: Optional[CoverageResolver] = None,
+        extractor=None,
+        gap_analyzer=None,
+        semantic_engine=None,
     ):
         self._config = config
         self._taxonomy = taxonomy
@@ -118,6 +135,245 @@ class IntelligenceEngine:
         # object, which meant every recorded outcome died with the process
         # (doc 15 R3). The engine now owns no storage at all.
         self._state = state
+        # Pipeline services — injected by deps.py so they are testable.
+        # None means the service is unavailable (graceful degradation).
+        self._extractor = extractor
+        self._gap_analyzer = gap_analyzer
+        self._semantic_engine = semantic_engine
+
+    # =========================================================================
+    # FULL PIPELINE — doc 12 Rule 1: this is the ONLY orchestrator
+    # =========================================================================
+
+    async def analyze(
+        self,
+        resume_text: str,
+        jd_text: str,
+        *,
+        include_simulations: bool = True,
+        include_evidence: bool = True,
+    ) -> dict:
+        """
+        Full pipeline: texts → structured response dict.
+
+        This is the method endpoints call. It owns the entire orchestration
+        so that api/v1/endpoints/analyze.py is THIN (doc 12 Rule 3).
+        """
+        import uuid
+        start = time.perf_counter()
+        analysis_id = str(uuid.uuid4())
+
+        # ── Step 1: Extract skills ──────────────────────────────
+        resume_result = await self._extractor.extract_async(resume_text)
+        jd_result = await self._extractor.extract_async(jd_text)
+
+        # ── Step 1b: Cross-document semantic skill matching ─────
+        cross_doc_skills = self._extractor.extract_cross_document(
+            resume_text, jd_text, resume_result, jd_result
+        )
+        if cross_doc_skills:
+            resume_result = ExtractionResult(
+                skills=resume_result.skills + cross_doc_skills,
+                extraction_methods_used=resume_result.extraction_methods_used + ["semantic"],
+                degraded=resume_result.degraded,
+                failed_layers=resume_result.failed_layers,
+                processing_time_ms=resume_result.processing_time_ms,
+            )
+
+        # ── Step 2: Semantic similarity ─────────────────────────
+        semantic_result = None
+        semantic_score = None
+        if self._semantic_engine:
+            semantic_result = await self._semantic_engine.compute_similarity_async(
+                resume_text, jd_text, resume_result, jd_result,
+            )
+            semantic_score = semantic_result.overall_score
+
+        # ── Step 3: Gap analysis ────────────────────────────────
+        gap_result = self._gap_analyzer.analyze(resume_result, jd_result, jd_text)
+
+        # ── Step 4: Decision ────────────────────────────────────
+        decision = self.decide(
+            semantic_score=semantic_score,
+            resume_result=resume_result,
+            jd_result=jd_result,
+            gap_result=gap_result,
+        )
+
+        elapsed = (time.perf_counter() - start) * 1000
+
+        # ── Step 5: Assemble response ───────────────────────────
+        response = self._build_response(
+            analysis_id=analysis_id,
+            decision=decision,
+            resume_result=resume_result,
+            jd_result=jd_result,
+            gap_result=gap_result,
+            semantic_result=semantic_result,
+            include_simulations=include_simulations,
+            include_evidence=include_evidence,
+            elapsed=elapsed,
+        )
+
+        # ── Step 6: Persist ─────────────────────────────────────
+        self._persist_analysis(analysis_id, resume_text, jd_text, decision, response, elapsed)
+
+        return response
+
+    def _build_response(
+        self, *, analysis_id, decision, resume_result, jd_result,
+        gap_result, semantic_result, include_simulations, include_evidence,
+        elapsed,
+    ) -> dict:
+        """Assemble the full response dict from all pipeline outputs."""
+        response = {
+            "analysis_id": analysis_id,
+            "decision": {
+                "recommendation": decision.recommendation.value,
+                "confidence": decision.confidence,
+                "shortlist_probability": decision.shortlist_probability,
+                "fit_level": decision.fit_level.value,
+                "overall_score": decision.overall_score,
+                "reasoning": decision.reasoning,
+            },
+            "scoring": {
+                "semantic_score": decision.scoring.semantic_score,
+                "skill_overlap_score": decision.scoring.skill_overlap_score,
+                "gap_penalty": decision.scoring.gap_penalty,
+                "final_score": decision.scoring.final_score,
+                "explanation": decision.scoring.explanation,
+            },
+            "skills": {
+                "resume_count": len(resume_result.skills),
+                "jd_count": len(jd_result.skills),
+                "matched": gap_result.matched_count,
+                "missing": gap_result.missing_count,
+                "overlap_score": gap_result.overlap_score,
+                "implied_matches": gap_result.coverage.implied_matches,
+                "resume_skills": [
+                    {
+                        "name": s.canonical,
+                        "category": s.category.value,
+                        "confidence": s.confidence,
+                        "proficiency": s.proficiency_score,
+                        "evidence_strength": s.evidence_strength,
+                        "occurrences": s.occurrence_count,
+                        "matched_by": s.matched_by.value,
+                        "sections": s.found_in_sections,
+                    }
+                    for s in resume_result.skills
+                ],
+            },
+            "requirements": {
+                "total": len(gap_result.requirements.groups),
+                "alternative": gap_result.requirements.alternative_count,
+                "optional": gap_result.requirements.optional_count,
+                "satisfied": gap_result.coverage.satisfied_count,
+                "unmet": gap_result.coverage.unmet_count,
+            },
+            "gaps": [
+                {
+                    "skill": g.skill,
+                    "category": g.category.value,
+                    "priority": g.priority.value,
+                    "reasoning": g.reasoning,
+                    "learning_time": g.learning_time_estimate,
+                    "related_present": g.related_present,
+                    "confidence": g.confidence,
+                    "alternatives": g.alternatives,
+                    "optional": g.optional,
+                }
+                for g in gap_result.gaps
+            ],
+            "improvement_path": [
+                {
+                    "rank": a.roi_rank,
+                    "skill": a.skill,
+                    "impact": a.impact_score_delta,
+                    "learning_time": a.learning_time,
+                    "reasoning": a.reasoning,
+                }
+                for a in decision.improvement_path
+            ],
+            "strengths": decision.strengths,
+            "weaknesses": decision.weaknesses,
+        }
+
+        if include_simulations and decision.top_simulations:
+            response["simulations"] = [
+                {
+                    "skill_added": s.skill_added,
+                    "current_score": s.current_score,
+                    "projected_score": s.projected_score,
+                    "delta": s.delta,
+                    "new_fit_level": s.new_fit_level.value,
+                    "new_shortlist_prob": s.new_shortlist_probability,
+                }
+                for s in decision.top_simulations
+            ]
+
+        if include_evidence and decision.evidence:
+            response["evidence"] = [
+                {
+                    "source": e.source,
+                    "claim": e.claim,
+                    "weight": e.weight,
+                    "confidence": e.confidence,
+                }
+                for e in decision.evidence
+            ]
+
+        if semantic_result:
+            response["semantic"] = {
+                "overall": semantic_result.overall_score,
+                "chunk_max": semantic_result.chunk_level_max,
+                "chunk_mean": semantic_result.chunk_level_mean,
+                "skill_alignment": semantic_result.skill_alignment_score,
+                "confidence": semantic_result.confidence,
+                "degraded": semantic_result.degraded,
+                "sections": [
+                    {"section": s.section, "score": s.score, "weight": s.weight}
+                    for s in semantic_result.section_scores[:5]
+                ],
+            }
+
+        response["meta"] = {
+            "processing_time_ms": round(elapsed, 1),
+            "extraction_degraded": resume_result.degraded or jd_result.degraded,
+            "semantic_available": self._semantic_engine is not None,
+            "versions": self._config.versions.model_dump(),
+        }
+
+        return response
+
+    def _persist_analysis(
+        self, analysis_id, resume_text, jd_text, decision, response, elapsed,
+    ) -> None:
+        """Store the analysis through StateBackend (doc 12 §4 Rule 5).
+
+        A storage failure must not lose the user's analysis: the result is
+        already computed and still returned by the caller.
+        """
+        try:
+            self._state.store_analysis(AnalysisRecord(
+                analysis_id=analysis_id,
+                resume_text=resume_text,
+                jd_text=jd_text,
+                recommendation=decision.recommendation.value,
+                fit_level=decision.fit_level.value,
+                overall_score=decision.overall_score,
+                shortlist_probability=decision.shortlist_probability,
+                confidence=decision.confidence,
+                reasoning=decision.reasoning,
+                semantic_score=decision.scoring.semantic_score,
+                skill_overlap_score=decision.scoring.skill_overlap_score or 0.0,
+                gap_penalty=decision.scoring.gap_penalty or 0.0,
+                scoring_explanation=decision.scoring.explanation,
+                payload=response,
+                processing_time_ms=elapsed,
+            ))
+        except Exception as e:
+            logger.error("Analysis %s not persisted: %s", analysis_id, e, exc_info=True)
 
     def decide(
         self,

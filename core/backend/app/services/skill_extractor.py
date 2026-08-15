@@ -104,6 +104,14 @@ class SkillExtractor:
         self._cache: dict[str, ExtractionResult] = {}
         self._cache_max = config.extraction_cache_size
 
+    def warm_up(self) -> None:
+        """Pre-warm spaCy NER pipeline during startup to avoid cold start latency."""
+        nlp = self._get_nlp()
+        if nlp is not None:
+            logger.info("SkillExtractor spaCy NER warmed up successfully")
+        else:
+            logger.warning("SkillExtractor warm_up skipped: spaCy NER unavailable")
+
     # =========================================================================
     # PUBLIC API
     # =========================================================================

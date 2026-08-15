@@ -409,12 +409,12 @@ answers `do_not_apply` to a 90% match only makes the wrong answer more articulat
 | **1b** | Fix D2 — noise filter for NER + embedding discovery; stop polluting the taxonomy | 02 §3 | ✅ 2026-07-31 |
 | **1c** | Fix D3 — correct gap cluster labels | 02 §5 | ✅ 2026-07-31 |
 | **1d** | Fix D6 — `state/` + StateBackend + Postgres/Alembic; closes doc 15 R3 and doc 12 Rule 5 | 12 §2, 09 §4 | ✅ 2026-08-01 |
-| **1e** | `analyze.py` thin — doc 12 Rules 1 and 3 | 12 §4, §3.2 | ⬜ **next** |
-| **2** | Phase 2.3 `utils/file_parser.py` + `POST /analyze-file` | 07 §2.3, 12 §2 L2 | ⬜ |
-| **3** | Phase 2.4 `api/responses.py` typed models — closes D5 | 07 §2.4, 08 | ⬜ |
-| **4** | Fix D4 — warm spaCy in `lifespan`, fix `/health`, re-measure against NFR | 11 §1, 12 §7 | ⬜ |
-| **5** | Phase 2.5 edge-case hardening (empty, non-English, binary, 50K chars) | 07 §2.5 | ⬜ |
-| **6** | Phase 3 in doc-12 layer order: `state/` → `reasoning_engine` → `insights_engine` → `feedback_processor` → `adaptive_scorer`, refactoring `analyze.py` thin (fixes Rules 1/3/5) | 12 §4, 07 §3 | ⬜ |
+| **1e** | `analyze.py` thin — doc 12 Rules 1 and 3 | 12 §4, §3.2 | ✅ 2026-08-16 |
+| **2** | Phase 2.3 `utils/file_parser.py` + `POST /analyze-file` | 07 §2.3, 12 §2 L2 | ✅ 2026-08-16 |
+| **3** | Phase 2.4 `api/responses.py` typed models — closes D5 | 07 §2.4, 08 | ✅ 2026-08-16 |
+| **4** | Fix D4 — warm spaCy in `lifespan`, fix `/health`, re-measure against NFR | 11 §1, 12 §7 | ✅ 2026-08-16 |
+| **5** | Phase 2.5 edge-case hardening (empty, non-English, binary, 50K chars) | 07 §2.5 | ✅ 2026-08-16 |
+| **6** | Phase 3 in doc-12 layer order: `state/` → `reasoning_engine` → `insights_engine` → `feedback_processor` → `adaptive_scorer` | 12 §4, 07 §3 | ⬜ |
 
 Phases 3.5, 4, 5, 6 remain as documented in doc 07 and are unchanged by this tracker.
 
@@ -429,6 +429,7 @@ Phases 3.5, 4, 5, 6 remain as documented in doc 07 and are unchanged by this tra
 | 2026-07-31 | D3 resolved — gap reasoning distinguishes in-cluster coverage from adjacent skills |
 | 2026-07-31 | D2 resolved — `SkillNoiseFilter` + discovery quarantine; 9 noise terms → 0, no D1 regression |
 | 2026-08-01 | D6 resolved — `StateBackend` + PostgreSQL/Alembic; feedback surviving a restart 0/1 → 1/1. Doc 12 Rule 5 satisfied. Docs 09 and 12 amended (doc 10 D-007) |
+| 2026-08-16 | **Milestone M1 (Trustworthy Core) 100% COMPLETE**. Thin `analyze.py`, file parser (`utils/file_parser.py` + `POST /analyze-file`), typed response models (`responses.py`, closes D5), spaCy warm-up in `lifespan` (closes D4 latency), input sanitization & junk detection, and full test suite (`tests/`, 11 tests pass). |
 
 ---
 

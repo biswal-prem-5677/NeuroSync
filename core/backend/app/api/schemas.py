@@ -4,8 +4,9 @@ Clean data contracts for the API layer. Separate from internal domain objects.
 """
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
+from app.utils.text_processor import clean_text, compute_alpha_ratio
 
 
 # =========================================================================
@@ -30,6 +31,18 @@ class AnalyzeRequest(BaseModel):
         default=True,
         description="Include full evidence chain in response",
     )
+
+    @field_validator("resume_text", "jd_text")
+    @classmethod
+    def validate_and_sanitize_text(cls, v: str, info) -> str:
+        cleaned = clean_text(v)
+        if len(cleaned) < (50 if info.field_name == "resume_text" else 20):
+            raise ValueError(f"{info.field_name} is too short after stripping control characters and HTML tags")
+        alpha_ratio = compute_alpha_ratio(cleaned)
+        if alpha_ratio < 0.3:
+            raise ValueError(f"{info.field_name} appears to be binary, encoded, or non-text junk content")
+        return cleaned
+
 
 
 class FeedbackRequest(BaseModel):

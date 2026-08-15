@@ -53,8 +53,8 @@ prompt-injected by a hostile resume, and produces comparable scores across candi
 
 | | |
 | --- | --- |
-| ✅ Working | 4-layer skill extraction · 3-layer semantic similarity · requirement-group resolution · cluster gap reasoning · scoring, fit and shortlist probability · what-if simulation · 3 REST endpoints · **durable storage of analyses and feedback (PostgreSQL)** |
-| 🚧 Not built | Authentication · file upload · web UI · tests · deployment |
+| ✅ Working | 4-layer skill extraction · 3-layer semantic similarity · requirement-group resolution · cluster gap reasoning · scoring, fit and shortlist probability · what-if simulation · 4 REST endpoints (`/analyze`, `/analyze-file`, `/feedback`, `/health`) · PDF/DOCX/TXT file parsing · **durable storage of analyses and feedback (PostgreSQL)** · test suite (pytest) |
+| 🚧 Not built | Authentication · web UI · rate limiting · deployment |
 
 Verified state lives in **[`blueprints/13_STATUS_TRACKER.md`](blueprints/13_STATUS_TRACKER.md)** —
 measured by running the system, not by assertion. An independent engineering review, including what
@@ -108,7 +108,8 @@ silently is the failure this layer exists to prevent. Schema:
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `POST` | `/api/v1/analyze` | Resume + JD → full intelligence report |
+| `POST` | `/api/v1/analyze` | Resume + JD text → full intelligence report |
+| `POST` | `/api/v1/analyze-file` | Resume + JD file upload (PDF/DOCX/TXT) → full intelligence report |
 | `POST` | `/api/v1/feedback` | Record the real outcome of an analysis |
 | `GET` | `/api/v1/health` | Component-level health and extraction stats |
 
@@ -116,12 +117,13 @@ Full contract: [`blueprints/08_API_CONTRACT.md`](blueprints/08_API_CONTRACT.md).
 
 ### Verification
 
-Correctness is enforced by probes, not by trust. Run from `core/backend/`:
+Correctness is enforced by tests and probes. Run from `core/backend/`:
 
 ```bash
-./venv/Scripts/python.exe verify_d1.py          # scoring + negative controls
-./venv/Scripts/python.exe -m tools.noise_probe  # extraction noise
-./venv/Scripts/python.exe -m tools.state_probe  # does data survive a restart?
+./venv/Scripts/python.exe -m pytest tests/ -v          # automated unit/integration test suite
+./venv/Scripts/python.exe verify_d1.py                  # scoring + negative controls
+./venv/Scripts/python.exe -m tools.noise_probe          # extraction noise
+./venv/Scripts/python.exe -m tools.state_probe          # does data survive a restart?
 ./venv/Scripts/python.exe -m tools.pipeline_probe
 ```
 
