@@ -26,6 +26,8 @@ _agent_decision_engine = None
 _market_intelligence_engine = None
 _career_trajectory_engine = None
 _adaptive_scorer = None
+_llm_enhancer = None
+
 
 
 
@@ -263,5 +265,15 @@ def get_adaptive_scorer():
     if _adaptive_scorer is None:
         _adaptive_scorer = AdaptiveScorer()
     return _adaptive_scorer
+
+
+def get_llm_enhancer():
+    """Return the LLMEnhancer singleton (Phase 4.4 optional LLM refinement)."""
+    from app.services.llm_enhancer import LLMEnhancer
+    global _llm_enhancer
+    if _llm_enhancer is None:
+        _llm_enhancer = LLMEnhancer(get_settings())
+    return _llm_enhancer
+
 
 
