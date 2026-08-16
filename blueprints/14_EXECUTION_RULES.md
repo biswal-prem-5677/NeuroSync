@@ -84,23 +84,30 @@ built.
 
 ### 2.3 Current position
 
-**Active milestone: M1 — Trustworthy Core.**
+**Active milestone: M2 — Usable Product (v1.0).**
 
+#### M1 — Trustworthy Core (Complete)
 | Item | Source | State |
 | --- | --- | --- |
 | D1 scoring miscalibration | 13 §4 | ✅ 2026-07-31 |
 | D2 extraction noise | 13 §4 | ✅ 2026-07-31 |
 | D3 gap cluster mislabeling | 13 §4 | ✅ 2026-07-31 |
-| D6 volatile state — `state/` + Postgres + Alembic (closes 15 R3) | 12 §2, 15 §19 | ✅ 2026-08-01 |
-| `analyze.py` thin — doc 12 Rules 1/3 (Rule 5 closed by D6) | 12 §4, 13 §3.2 | ✅ 2026-08-16 |
-| Test suite — `core/backend/tests/` (11 tests pass) | 07 §6.1 | ✅ 2026-08-16 |
+| D6 volatile state — `state/` + Postgres + Alembic | 12 §2, 15 §19 | ✅ 2026-08-01 |
+| `analyze.py` thin — doc 12 Rules 1/3 | 12 §4, 13 §3.2 | ✅ 2026-08-16 |
+| Test suite — `core/backend/tests/` (14 tests pass) | 07 §6.1 | ✅ 2026-08-16 |
 | D5 API contract drift → typed response models | 13 §4, 07 §2.4 | ✅ 2026-08-16 |
 | `utils/file_parser.py` + `/analyze-file` (PDF/DOCX/TXT) | 07 §2.3 | ✅ 2026-08-16 |
 | D4 latency + spaCy warm-up in `lifespan` | 13 §4 | ✅ 2026-08-16 |
 | Edge-case hardening — sanitization + junk detection | 07 §2.5 | ✅ 2026-08-16 |
 
-M1 is the only list being worked. When an item here is closed it is committed, pushed, and
-struck from this table in the same commit.
+#### M2 — Usable Product (v1.0)
+| Item | Source | State |
+| --- | --- | --- |
+| Magic-link authentication (`/auth/magic-link`, `/auth/verify`, JWT) | 07 §2, 14 §2 | ✅ 2026-08-16 |
+| Rate-limiting middleware (`RateLimitMiddleware`) | 11 §1, 14 §2 | ✅ 2026-08-16 |
+| Modern Web UI (`core/frontend/` — React + Vite, Dark Intelligence theme) | 06, 14 §2 | ✅ 2026-08-16 |
+| Unified Backend Distribution (FastAPI mounts `core/frontend/dist`) | 07, 14 §2 | ✅ 2026-08-16 |
+
 
 Work that is **blocked on the owner** rather than on engineering — external accounts,
 credentials, legal artifacts, people, and doc 15 §23's open questions — lives in

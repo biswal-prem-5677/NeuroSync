@@ -75,6 +75,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Rate Limiting
+    from app.middleware.rate_limit import RateLimitMiddleware
+    app.add_middleware(RateLimitMiddleware, max_requests=30, window_seconds=60)
+
+
     # Request ID + timing middleware
     @app.middleware("http")
     async def observability_middleware(request: Request, call_next):
@@ -105,7 +110,16 @@ def create_app() -> FastAPI:
     from app.api.v1.router import router as v1_router
     app.include_router(v1_router, prefix="/api/v1")
 
+    # Mount frontend static files if built
+    import os
+    from fastapi.staticfiles import StaticFiles
+    frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../frontend/dist"))
+    if os.path.isdir(frontend_dist):
+        app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
+        logger.info("Mounted frontend static files from %s", frontend_dist)
+
     return app
+
 
 
 app = create_app()

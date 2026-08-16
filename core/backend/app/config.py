@@ -27,7 +27,10 @@ class VersionConfig(BaseSettings):
 class Settings(BaseSettings):
     """Master configuration — all values overridable via env vars."""
 
-    model_config = {"env_prefix": "NEUROSYNC_", "case_sensitive": False}
+    # --- Security & Auth ---
+    secret_key: str = "neurosync-dev-secret-key-change-in-prod"
+    token_expire_days: int = 7
+    magic_link_expire_minutes: int = 15
 
     # --- Embedding / NLP Models ---
     embedding_model_name: str = "all-MiniLM-L6-v2"
