@@ -6,9 +6,11 @@ import ScoreRing from './components/ScoreRing';
 import StrengthsWeaknesses from './components/StrengthsWeaknesses';
 import GapAnalysis from './components/GapAnalysis';
 import SimulationPlayground from './components/SimulationPlayground';
+import JobTracker from './components/JobTracker';
+import OutreachSection from './components/OutreachSection';
+import PublicProfileSection from './components/PublicProfileSection';
 import AuthModal from './components/AuthModal';
-import { AlertTriangle, ArrowUpRight } from 'lucide-react';
-
+import { AlertTriangle, Sparkles, Camera, Briefcase, Mail, User } from 'lucide-react';
 
 export default function App() {
   const [loading, setLoading] = useState(false);
@@ -17,6 +19,7 @@ export default function App() {
   const [serverHealthy, setServerHealthy] = useState(true);
   const [user, setUser] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('career'); // 'career' | 'perception' | 'jobs' | 'outreach' | 'profile'
 
   useEffect(() => {
     fetch('/api/v1/health')
@@ -74,6 +77,14 @@ export default function App() {
     localStorage.setItem('neurosync_token', token);
   };
 
+  const navTabs = [
+    { id: 'career', label: 'Career Engine', icon: Sparkles },
+    { id: 'perception', label: 'Perception Monitor', icon: Camera },
+    { id: 'jobs', label: 'Job Tracker', icon: Briefcase },
+    { id: 'outreach', label: 'Cold Outreach', icon: Mail },
+    { id: 'profile', label: 'Public Profile', icon: User },
+  ];
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar
@@ -82,39 +93,47 @@ export default function App() {
         serverHealthy={serverHealthy}
       />
 
-      <main style={{ flex: 1, maxWidth: '1200px', width: '100%', margin: '0 auto', padding: '40px 24px 64px' }}>
-        {/* Hero Section (Vercel style clean minimal header) */}
-        <div style={{ marginBottom: '40px', textAlign: 'center' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '12px',
-            fontWeight: 500,
-            color: 'var(--accent)',
-            background: 'var(--accent-subtle)',
-            border: '1px solid rgba(129, 140, 248, 0.2)',
-            padding: '4px 12px',
-            borderRadius: 'var(--radius-full)',
-            marginBottom: '16px'
-          }}>
-            <span>Multi-factor Skill Graph & Decision Engine</span>
-          </div>
-
-          <h1 style={{
-            fontSize: '38px',
-            fontWeight: 800,
-            letterSpacing: '-0.03em',
-            color: 'var(--text-0)',
-            marginBottom: '12px',
-            lineHeight: 1.15
-          }}>
-            Precision Career Intelligence
-          </h1>
-
-          <p style={{ fontSize: '15px', color: 'var(--text-2)', maxWidth: '600px', margin: '0 auto', lineHeight: 1.6 }}>
-            Evaluate resume alignment, resolve requirement groups, and run real-time what-if score simulations using on-device ML embeddings.
-          </p>
+      <main style={{ flex: 1, maxWidth: '1200px', width: '100%', margin: '0 auto', padding: '32px 16px 64px' }}>
+        {/* Responsive Ecosystem Navigation Tab Bar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          overflowX: 'auto',
+          padding: '4px',
+          background: 'var(--surface-2)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-default)',
+          marginBottom: '32px'
+        }}>
+          {navTabs.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: isActive ? 'var(--surface-4)' : 'transparent',
+                  color: isActive ? 'var(--text-0)' : 'var(--text-3)',
+                  border: 'none',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all var(--duration-fast) var(--ease-out)'
+                }}
+              >
+                <Icon size={14} color={isActive ? 'var(--accent)' : 'currentColor'} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Error Alert Banner */}
@@ -136,37 +155,64 @@ export default function App() {
           </div>
         )}
 
-        {/* Input & Upload Panel */}
-        <InputSection onAnalyze={handleAnalyze} loading={loading} />
-
-        {/* Camera Perception & Emotion Telemetry Monitor (Pillar 1) */}
-        <CameraMonitor />
-
-        {/* Results Container */}
-
-        {analysisResult && (
+        {/* Tab 1: Career Engine */}
+        {activeTab === 'career' && (
           <div>
-            <ScoreRing
-              decision={analysisResult.decision}
-              scoring={analysisResult.scoring}
-              meta={analysisResult.meta}
-            />
+            <InputSection onAnalyze={handleAnalyze} loading={loading} />
 
-            <StrengthsWeaknesses
-              strengths={analysisResult.strengths}
-              weaknesses={analysisResult.weaknesses}
-              impliedMatches={analysisResult.skills?.implied_matches}
-            />
+            {analysisResult && (
+              <div>
+                <ScoreRing
+                  decision={analysisResult.decision}
+                  scoring={analysisResult.scoring}
+                  meta={analysisResult.meta}
+                />
 
-            {analysisResult.simulations && (
-              <SimulationPlayground
-                simulations={analysisResult.simulations}
-                improvementPath={analysisResult.improvement_path}
-                currentScore={analysisResult.decision.overall_score}
-              />
+                <StrengthsWeaknesses
+                  strengths={analysisResult.strengths}
+                  weaknesses={analysisResult.weaknesses}
+                  impliedMatches={analysisResult.skills?.implied_matches}
+                />
+
+                {analysisResult.simulations && (
+                  <SimulationPlayground
+                    simulations={analysisResult.simulations}
+                    improvementPath={analysisResult.improvement_path}
+                    currentScore={analysisResult.decision.overall_score}
+                  />
+                )}
+
+                <GapAnalysis gaps={analysisResult.gaps} />
+              </div>
             )}
+          </div>
+        )}
 
-            <GapAnalysis gaps={analysisResult.gaps} />
+        {/* Tab 2: Perception Monitor (Pillar 1) */}
+        {activeTab === 'perception' && (
+          <div>
+            <CameraMonitor />
+          </div>
+        )}
+
+        {/* Tab 3: Job Tracker & Kanban (Pillar 3) */}
+        {activeTab === 'jobs' && (
+          <div>
+            <JobTracker />
+          </div>
+        )}
+
+        {/* Tab 4: Cold Outreach (Pillar 3) */}
+        {activeTab === 'outreach' && (
+          <div>
+            <OutreachSection />
+          </div>
+        )}
+
+        {/* Tab 5: Public Profile & Showcase (Pillar 3) */}
+        {activeTab === 'profile' && (
+          <div>
+            <PublicProfileSection />
           </div>
         )}
       </main>

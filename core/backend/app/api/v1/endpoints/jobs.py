@@ -1,0 +1,29 @@
+"""NeuroSync — Job Search & Application Tracker API Router."""
+
+from fastapi import APIRouter, Query
+from typing import Dict, List, Optional
+from app.services.job_discovery_engine import (
+    job_discovery_engine,
+    JobOpportunity,
+    ApplicationRecord
+)
+
+router = APIRouter(prefix="/jobs", tags=["Job Search & Application Tracker"])
+
+
+@router.get("/search", response_model=List[JobOpportunity], summary="Search matching job opportunities")
+async def search_jobs(query: Optional[str] = Query(None), min_match: float = Query(70.0)):
+    """Search for jobs matching user profile & filter score floor."""
+    return job_discovery_engine.search_jobs(query, min_match)
+
+
+@router.get("/applications", response_model=List[ApplicationRecord], summary="Get application Kanban tracking board")
+async def get_applications(user_id: str = "usr_biswal"):
+    """Retrieve user's active job application Kanban tracking board."""
+    return job_discovery_engine.get_applications(user_id)
+
+
+@router.post("/applications/status", response_model=ApplicationRecord, summary="Update application status")
+async def update_status(user_id: str, app_id: str, new_status: str):
+    """Update job application Kanban status (Applied, Interview, Offer)."""
+    return job_discovery_engine.update_application_status(user_id, app_id, new_status)
