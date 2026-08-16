@@ -31,5 +31,9 @@ async def update_status(user_id: str = Query(...), app_id: str = Query(...), new
     """Update job application Kanban status (Applied, Interview, Offer)."""
     if not user_id or not user_id.strip():
         raise HTTPException(status_code=400, detail="Invalid user ID")
-    return job_discovery_engine.update_application_status(user_id, app_id, new_status)
+    try:
+        return job_discovery_engine.update_application_status(user_id, app_id, new_status)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
 
