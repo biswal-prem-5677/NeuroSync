@@ -33,9 +33,9 @@ class AdaptiveScorer:
         profile = _ROLE_WEIGHT_PROFILES.get(key, _ROLE_WEIGHT_PROFILES["default"])
 
         return ScoringWeights(
-            semantic_weight=profile["semantic"],
-            skill_overlap_weight=profile["skill_overlap"],
-            gap_penalty_weight=profile["gap_penalty"],
+            semantic=profile["semantic"],
+            skill=profile["skill_overlap"],
+            gap=profile["gap_penalty"],
         )
 
     def calculate_adaptive_score(
@@ -47,8 +47,9 @@ class AdaptiveScorer:
     ) -> float:
         w = self.get_role_weights(role_type)
         raw = (
-            semantic_score * w.semantic_weight * 100.0 +
-            skill_overlap_score * w.skill_overlap_weight -
-            gap_penalty * w.gap_penalty_weight * 10.0
+            semantic_score * w.semantic * 100.0 +
+            skill_overlap_score * w.skill -
+            gap_penalty * w.gap * 10.0
         )
         return max(0.0, min(100.0, raw))
+

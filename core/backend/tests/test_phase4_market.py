@@ -42,10 +42,11 @@ def test_career_trajectory_engine():
 def test_adaptive_scorer():
     scorer = AdaptiveScorer()
     backend_w = scorer.get_role_weights("backend")
-    assert backend_w.skill_overlap_weight > backend_w.semantic_weight
+    assert backend_w.skill > backend_w.semantic
 
     score = scorer.calculate_adaptive_score(semantic_score=0.8, skill_overlap_score=80.0, gap_penalty=5.0, role_type="backend")
     assert 0.0 <= score <= 100.0
+
 
 
 @pytest.mark.anyio
