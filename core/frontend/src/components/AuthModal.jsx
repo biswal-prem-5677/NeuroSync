@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, ShieldCheck, ArrowRight, Key } from 'lucide-react';
+import { X, Mail, ShieldCheck, ArrowRight, Lock } from 'lucide-react';
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   if (!isOpen) return null;
@@ -23,7 +23,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       const data = await res.json();
       if (res.ok) {
         setMagicToken(data.token);
-        setMessage('Magic link generated! (Dev Mode: Click verify below)');
+        setMessage('Verification token generated (Dev Mode). Click verify below to authenticate.');
       } else {
         setMessage(data.detail || 'Failed to request magic link');
       }
@@ -61,19 +61,20 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(0, 0, 0, 0.75)',
-      backdropFilter: 'blur(8px)',
+      background: 'rgba(0, 0, 0, 0.8)',
+      backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 2000,
       padding: '20px'
     }}>
-      <div className="glass-panel animate-fade-in" style={{
+      <div className="card animate-in-scale" style={{
         width: '100%',
-        maxWidth: '420px',
+        maxWidth: '400px',
         padding: '28px',
-        position: 'relative'
+        position: 'relative',
+        background: 'var(--surface-1)'
       }}>
         <button
           onClick={onClose}
@@ -83,62 +84,60 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
             right: '20px',
             background: 'none',
             border: 'none',
-            color: 'var(--text-muted)',
+            color: 'var(--text-4)',
             cursor: 'pointer'
           }}
         >
-          <X size={20} />
+          <X size={18} />
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-          <ShieldCheck size={24} color="var(--accent-primary)" />
-          <h3 style={{ fontSize: '20px', fontWeight: 700 }}>Magic Link Auth</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+          <div style={{
+            width: '28px', height: '28px', borderRadius: 'var(--radius-sm)',
+            background: 'var(--accent-subtle)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <Lock size={15} color="var(--accent)" />
+          </div>
+          <h3 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text-0)' }}>Sign in to NeuroSync</h3>
         </div>
-        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
-          Passwordless login to save analysis reports & track your growth
+        <p style={{ fontSize: '13px', color: 'var(--text-3)', marginBottom: '20px' }}>
+          Passwordless magic link authentication for secure candidate analysis.
         </p>
 
         {!magicToken ? (
           <form onSubmit={handleRequestMagicLink}>
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                EMAIL ADDRESS
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '6px' }}>
+                Email Address
               </label>
               <div style={{ position: 'relative' }}>
-                <Mail size={16} color="var(--text-dim)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+                <Mail size={15} color="var(--text-4)" style={{ position: 'absolute', left: '12px', top: '11px' }} />
                 <input
                   type="email"
+                  className="input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
+                  placeholder="name@company.com"
                   required
-                  style={{
-                    width: '100%',
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '8px',
-                    padding: '10px 12px 10px 38px',
-                    color: 'var(--text-main)',
-                    fontSize: '14px',
-                    outline: 'none'
-                  }}
+                  style={{ paddingLeft: '36px' }}
                 />
               </div>
             </div>
 
-            {message && <p style={{ fontSize: '13px', color: 'var(--signal-potential)', marginBottom: '12px' }}>{message}</p>}
+            {message && <p style={{ fontSize: '12px', color: 'var(--amber)', marginBottom: '12px' }}>{message}</p>}
 
-            <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
+            <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%', padding: '10px' }}>
               {loading ? 'Generating...' : 'Send Magic Link'}
             </button>
           </form>
         ) : (
           <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: '14px', color: 'var(--signal-strong)', marginBottom: '16px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--green)', marginBottom: '16px', lineHeight: 1.4 }}>
               {message}
             </p>
-            <button onClick={handleVerifyMagicToken} className="btn-primary" disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
-              {loading ? 'Verifying...' : 'Verify Magic Link & Log In'}
+            <button onClick={handleVerifyMagicToken} className="btn-primary" disabled={loading} style={{ width: '100%', padding: '10px' }}>
+              {loading ? 'Verifying...' : 'Authenticate & Continue'}
             </button>
           </div>
         )}

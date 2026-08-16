@@ -6,7 +6,7 @@ import StrengthsWeaknesses from './components/StrengthsWeaknesses';
 import GapAnalysis from './components/GapAnalysis';
 import SimulationPlayground from './components/SimulationPlayground';
 import AuthModal from './components/AuthModal';
-import { AlertCircle } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight } from 'lucide-react';
 
 export default function App() {
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,6 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Check health endpoint on load
   useEffect(() => {
     fetch('/api/v1/health')
       .then(res => res.json())
@@ -81,39 +80,56 @@ export default function App() {
         serverHealthy={serverHealthy}
       />
 
-      <main style={{ flex: 1, maxWidth: '1200px', width: '100%', margin: '0 auto', padding: '32px 24px' }}>
-        {/* Hero Banner */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+      <main style={{ flex: 1, maxWidth: '1200px', width: '100%', margin: '0 auto', padding: '40px 24px 64px' }}>
+        {/* Hero Section (Vercel style clean minimal header) */}
+        <div style={{ marginBottom: '40px', textAlign: 'center' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '12px',
+            fontWeight: 500,
+            color: 'var(--accent)',
+            background: 'var(--accent-subtle)',
+            border: '1px solid rgba(129, 140, 248, 0.2)',
+            padding: '4px 12px',
+            borderRadius: 'var(--radius-full)',
+            marginBottom: '16px'
+          }}>
+            <span>Multi-factor Skill Graph & Decision Engine</span>
+          </div>
+
           <h1 style={{
-            fontSize: '36px',
+            fontSize: '38px',
             fontWeight: 800,
             letterSpacing: '-0.03em',
-            background: 'linear-gradient(135deg, #FFF 30%, #9CA3AF 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '8px'
+            color: 'var(--text-0)',
+            marginBottom: '12px',
+            lineHeight: 1.15
           }}>
-            Career Decision Engine
+            Precision Career Intelligence
           </h1>
-          <p style={{ fontSize: '16px', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto' }}>
-            Multi-factor resume & job alignment analysis with skill graph reasoning, requirement group resolution, and what-if score simulations.
+
+          <p style={{ fontSize: '15px', color: 'var(--text-2)', maxWidth: '600px', margin: '0 auto', lineHeight: 1.6 }}>
+            Evaluate resume alignment, resolve requirement groups, and run real-time what-if score simulations using on-device ML embeddings.
           </p>
         </div>
 
-        {/* Error Alert */}
+        {/* Error Alert Banner */}
         {error && (
           <div style={{
-            padding: '14px 18px',
-            borderRadius: '12px',
-            background: 'rgba(239, 68, 68, 0.12)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: 'var(--signal-weak)',
+            padding: '12px 16px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--red-subtle)',
+            border: '1px solid rgba(248, 113, 113, 0.3)',
+            color: 'var(--red)',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            marginBottom: '24px'
+            marginBottom: '24px',
+            fontSize: '14px'
           }}>
-            <AlertCircle size={18} />
+            <AlertTriangle size={16} />
             <span>{error}</span>
           </div>
         )}
@@ -121,24 +137,21 @@ export default function App() {
         {/* Input & Upload Panel */}
         <InputSection onAnalyze={handleAnalyze} loading={loading} />
 
-        {/* Results Section */}
+        {/* Results Container */}
         {analysisResult && (
-          <div className="animate-fade-in">
-            {/* Score Ring & Verdict Header */}
+          <div>
             <ScoreRing
               decision={analysisResult.decision}
               scoring={analysisResult.scoring}
               meta={analysisResult.meta}
             />
 
-            {/* Strengths & Weaknesses */}
             <StrengthsWeaknesses
               strengths={analysisResult.strengths}
               weaknesses={analysisResult.weaknesses}
               impliedMatches={analysisResult.skills?.implied_matches}
             />
 
-            {/* Simulation Playground */}
             {analysisResult.simulations && (
               <SimulationPlayground
                 simulations={analysisResult.simulations}
@@ -147,7 +160,6 @@ export default function App() {
               />
             )}
 
-            {/* Prioritized Skill Gaps */}
             <GapAnalysis gaps={analysisResult.gaps} />
           </div>
         )}

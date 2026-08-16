@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sliders, TrendingUp, Sparkles, Plus, Check } from 'lucide-react';
+import { Sliders, Plus, Check, TrendingUp } from 'lucide-react';
 
 export default function SimulationPlayground({ simulations, improvementPath, currentScore }) {
   if (!simulations || simulations.length === 0) return null;
@@ -14,7 +14,6 @@ export default function SimulationPlayground({ simulations, improvementPath, cur
     }
   };
 
-  // Calculate cumulative score delta from selected simulations
   const cumulativeDelta = activeSims.reduce((acc, skillName) => {
     const sim = simulations.find(s => s.skill_added === skillName);
     return acc + (sim ? sim.delta : 0);
@@ -23,7 +22,7 @@ export default function SimulationPlayground({ simulations, improvementPath, cur
   const projectedTotalScore = Math.min(100, (currentScore || 0) + cumulativeDelta);
 
   return (
-    <div className="glass-panel animate-fade-in" style={{ padding: '28px', marginBottom: '32px' }}>
+    <div className="card animate-in" style={{ padding: '28px', marginBottom: '24px', animationDelay: '180ms' }}>
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -33,49 +32,48 @@ export default function SimulationPlayground({ simulations, improvementPath, cur
         gap: '12px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Sliders size={22} color="var(--accent-primary)" />
+          <div style={{
+            width: '28px', height: '28px', borderRadius: 'var(--radius-sm)',
+            background: 'var(--accent-subtle)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <Sliders size={15} color="var(--accent)" />
+          </div>
           <div>
-            <h3 style={{ fontSize: '18px', fontWeight: 600 }}>What-If Simulation Playground</h3>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              Select missing skills below to project real-time score improvements & ROI
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-0)' }}>What-If Score Simulator</h3>
+            <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>
+              Toggle missing skills to project real-time score impact and return on investment.
             </p>
           </div>
         </div>
 
-        {/* Live Score Counter */}
+        {/* Live Score Counter Badge */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '16px',
-          padding: '10px 20px',
-          borderRadius: '12px',
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-active)'
+          gap: '12px',
+          padding: '6px 14px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border-default)'
         }}>
-          <div>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Baseline</span>
-            <div className="font-mono" style={{ fontSize: '16px', fontWeight: 700 }}>{currentScore?.toFixed(1)}</div>
-          </div>
-
-          <div style={{ fontSize: '18px', color: 'var(--text-dim)' }}>→</div>
-
-          <div>
-            <span style={{ fontSize: '11px', color: 'var(--accent-glow)', textTransform: 'uppercase' }}>Projected</span>
-            <div className="font-mono" style={{ fontSize: '20px', fontWeight: 700, color: 'var(--signal-strong)' }}>
-              {projectedTotalScore.toFixed(1)}
-              {cumulativeDelta > 0 && (
-                <span style={{ fontSize: '12px', marginLeft: '6px' }}>(+{cumulativeDelta.toFixed(1)})</span>
-              )}
-            </div>
-          </div>
+          <span style={{ fontSize: '12px', color: 'var(--text-3)' }}>Score:</span>
+          <span className="font-mono" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-2)' }}>
+            {currentScore?.toFixed(0)}
+          </span>
+          <span style={{ fontSize: '12px', color: 'var(--text-4)' }}>→</span>
+          <span className="font-mono" style={{ fontSize: '15px', fontWeight: 700, color: cumulativeDelta > 0 ? 'var(--green)' : 'var(--text-0)' }}>
+            {projectedTotalScore.toFixed(0)}
+            {cumulativeDelta > 0 && <span style={{ fontSize: '11px', marginLeft: '4px' }}>(+{cumulativeDelta.toFixed(1)})</span>}
+          </span>
         </div>
       </div>
 
-      {/* Simulation Cards Grid */}
+      {/* Grid of Simulation Skill Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '16px'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+        gap: '12px'
       }}>
         {simulations.map((sim, idx) => {
           const isSelected = activeSims.includes(sim.skill_added);
@@ -86,53 +84,41 @@ export default function SimulationPlayground({ simulations, improvementPath, cur
               key={idx}
               onClick={() => toggleSim(sim.skill_added)}
               style={{
-                padding: '20px',
-                borderRadius: '12px',
-                background: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-elevated)',
-                border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
+                padding: '16px',
+                borderRadius: 'var(--radius-md)',
+                background: isSelected ? 'var(--accent-subtle)' : 'var(--surface-2)',
+                border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border-default)'}`,
                 cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: isSelected ? '0 0 20px rgba(99, 102, 241, 0.2)' : 'none'
+                transition: 'all var(--duration-fast) var(--ease-out)',
+                userSelect: 'none'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    background: isSelected ? 'var(--accent-primary)' : 'rgba(255,255,255,0.08)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white'
+                  <div style={{
+                    width: '18px', height: '18px', borderRadius: '50%',
+                    background: isSelected ? 'var(--accent-stronger)' : 'var(--surface-3)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff'
                   }}>
-                    {isSelected ? <Check size={14} /> : <Plus size={14} />}
-                  </span>
-                  <h4 style={{ fontSize: '16px', fontWeight: 700 }}>{sim.skill_added}</h4>
+                    {isSelected ? <Check size={11} strokeWidth={3} /> : <Plus size={11} />}
+                  </div>
+                  <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-0)' }}>{sim.skill_added}</h4>
                 </div>
 
-                <span className="badge badge-strong" style={{ fontFamily: 'var(--font-mono)' }}>
+                <span className="badge badge-green font-mono" style={{ fontSize: '10px' }}>
                   +{sim.delta.toFixed(1)} pts
                 </span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                <span>Score Improvement:</span>
-                <strong style={{ color: 'var(--text-main)' }}>
-                  {sim.current_score.toFixed(1)} → {sim.projected_score.toFixed(1)}
-                </strong>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-muted)' }}>
-                <span>Projected Fit:</span>
-                <strong style={{ color: 'var(--signal-strong)', textTransform: 'capitalize' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-3)' }}>
+                <span>Fit level:</span>
+                <span style={{ color: 'var(--text-1)', textTransform: 'capitalize' }}>
                   {sim.new_fit_level.replace('_', ' ')}
-                </strong>
+                </span>
               </div>
 
               {roiAction && (
-                <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '10px', lineHeight: 1.4, borderTop: '1px solid var(--border-subtle)', paddingTop: '8px' }}>
+                <p style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-default)', lineHeight: 1.4 }}>
                   {roiAction.reasoning}
                 </p>
               )}

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FileText, Upload, Sparkles, Sliders, CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { FileText, Upload, Sparkles, ToggleLeft, ToggleRight, ArrowRight } from 'lucide-react';
 
 const SAMPLE_RESUME = `Priyabrata Biswal
 Senior Software Engineer | Full Stack Developer
@@ -41,12 +41,14 @@ Nice to have:
 - Knowledge of service mesh (Istio, Linkerd)`;
 
 export default function InputSection({ onAnalyze, loading }) {
-  const [inputMode, setInputMode] = useState('text'); // 'text' | 'file'
+  const [inputMode, setInputMode] = useState('text');
   const [resumeText, setResumeText] = useState('');
   const [jdText, setJdText] = useState('');
   const [resumeFile, setResumeFile] = useState(null);
   const [includeSimulations, setIncludeSimulations] = useState(true);
   const [includeEvidence, setIncludeEvidence] = useState(true);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleLoadSample = () => {
     setInputMode('text');
@@ -57,228 +59,236 @@ export default function InputSection({ onAnalyze, loading }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (inputMode === 'file' && resumeFile) {
-      onAnalyze({
-        mode: 'file',
-        resumeFile,
-        jdText,
-        includeSimulations,
-        includeEvidence,
-      });
+      onAnalyze({ mode: 'file', resumeFile, jdText, includeSimulations, includeEvidence });
     } else {
       if (!resumeText.trim() || !jdText.trim()) return;
-      onAnalyze({
-        mode: 'text',
-        resumeText,
-        jdText,
-        includeSimulations,
-        includeEvidence,
-      });
+      onAnalyze({ mode: 'text', resumeText, jdText, includeSimulations, includeEvidence });
     }
   };
 
-  return (
-    <div className="glass-panel animate-fade-in" style={{ padding: '28px', marginBottom: '32px' }}>
-      {/* Header controls */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '20px',
-        flexWrap: 'wrap',
-        gap: '12px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Sparkles size={20} color="var(--accent-glow)" />
-          <h2 style={{ fontSize: '18px', fontWeight: 600 }}>Analyze Resume Against Job Role</h2>
-        </div>
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) setResumeFile(file);
+  };
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Mode Switch */}
-          <div style={{
-            display: 'flex',
-            background: 'var(--bg-elevated)',
-            padding: '3px',
-            borderRadius: '8px',
-            border: '1px solid var(--border-subtle)'
-          }}>
-            <button
-              onClick={() => setInputMode('text')}
-              style={{
-                background: inputMode === 'text' ? 'var(--accent-primary)' : 'transparent',
-                color: inputMode === 'text' ? '#FFF' : 'var(--text-muted)',
-                border: 'none',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
-            >
-              Text Paste
-            </button>
-            <button
-              onClick={() => setInputMode('file')}
-              style={{
-                background: inputMode === 'file' ? 'var(--accent-primary)' : 'transparent',
-                color: inputMode === 'file' ? '#FFF' : 'var(--text-muted)',
-                border: 'none',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
-            >
-              File Upload (PDF/DOCX)
-            </button>
+  const canSubmit = inputMode === 'text'
+    ? resumeText.trim().length > 0 && jdText.trim().length > 0
+    : resumeFile && jdText.trim().length > 0;
+
+  return (
+    <div className="card animate-in" style={{ padding: '28px 28px 24px' }}>
+      {/* ─── Header ─── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-0)' }}>
+          Analyze Resume Against Job Role
+        </h2>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Mode toggle */}
+          <div
+            style={{
+              display: 'inline-flex',
+              background: 'var(--surface-2)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-default)',
+              padding: '2px',
+            }}
+          >
+            {['text', 'file'].map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setInputMode(mode)}
+                style={{
+                  background: inputMode === mode ? 'var(--surface-4)' : 'transparent',
+                  color: inputMode === mode ? 'var(--text-0)' : 'var(--text-3)',
+                  border: 'none',
+                  padding: '5px 12px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all var(--duration-fast) var(--ease-out)',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
+                {mode === 'text' ? 'Paste Text' : 'Upload File'}
+              </button>
+            ))}
           </div>
 
-          <button className="btn-secondary" onClick={handleLoadSample}>
-            Load Sample Data
+          <button type="button" className="btn-ghost" onClick={handleLoadSample} style={{ fontSize: '12px', color: 'var(--accent)' }}>
+            Load sample
           </button>
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* Grid Inputs */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '20px',
-          marginBottom: '20px'
-        }}>
-          {/* Resume Column */}
+        {/* ─── Input columns ─── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+          {/* Resume */}
           <div>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              fontSize: '13px',
-              fontWeight: 600,
-              color: 'var(--text-muted)'
-            }}>
-              YOUR RESUME
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '11px', fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              Resume
             </label>
 
             {inputMode === 'text' ? (
               <textarea
+                className="input"
                 value={resumeText}
                 onChange={(e) => setResumeText(e.target.value)}
-                placeholder="Paste raw resume text here (min 50 characters)..."
-                rows={12}
-                style={{
-                  width: '100%',
-                  background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: '12px',
-                  padding: '14px',
-                  color: 'var(--text-main)',
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: '14px',
-                  resize: 'vertical',
-                  outline: 'none'
-                }}
+                placeholder="Paste resume text here..."
+                rows={14}
+                style={{ minHeight: '320px' }}
               />
             ) : (
-              <div style={{
-                border: '2px dashed var(--border-subtle)',
-                borderRadius: '12px',
-                padding: '40px 20px',
-                textAlign: 'center',
-                background: 'var(--bg-elevated)',
-                cursor: 'pointer'
-              }}>
-                <Upload size={32} color="var(--accent-primary)" style={{ marginBottom: '12px' }} />
-                <p style={{ fontSize: '14px', fontWeight: 500, marginBottom: '6px' }}>
-                  {resumeFile ? resumeFile.name : 'Upload PDF, DOCX, or TXT file'}
-                </p>
-                <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
-                  Max size 10MB • Automatic text extraction
-                </span>
+              <div
+                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  minHeight: '320px',
+                  border: `1.5px dashed ${isDragOver ? 'var(--accent)' : 'var(--border-default)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  background: isDragOver ? 'var(--accent-glow)' : 'var(--surface-2)',
+                  cursor: 'pointer',
+                  transition: 'all var(--duration-normal) var(--ease-out)',
+                }}
+              >
+                <div
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--surface-3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Upload size={20} color="var(--text-3)" />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-1)', marginBottom: '4px' }}>
+                    {resumeFile ? resumeFile.name : 'Drop your resume here'}
+                  </p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-4)' }}>
+                    PDF, DOCX, or TXT · Max 10 MB
+                  </p>
+                </div>
                 <input
+                  ref={fileInputRef}
                   type="file"
                   accept=".pdf,.docx,.txt"
                   onChange={(e) => setResumeFile(e.target.files[0])}
-                  style={{ display: 'block', margin: '12px auto 0' }}
+                  style={{ display: 'none' }}
                 />
               </div>
             )}
           </div>
 
-          {/* JD Column */}
+          {/* Job Description */}
           <div>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              fontSize: '13px',
-              fontWeight: 600,
-              color: 'var(--text-muted)'
-            }}>
-              TARGET JOB DESCRIPTION
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '11px', fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              Target Job Description
             </label>
             <textarea
+              className="input"
               value={jdText}
               onChange={(e) => setJdText(e.target.value)}
-              placeholder="Paste Target Job Description (min 20 characters)..."
-              rows={12}
-              style={{
-                width: '100%',
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '12px',
-                padding: '14px',
-                color: 'var(--text-main)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '14px',
-                resize: 'vertical',
-                outline: 'none'
-              }}
+              placeholder="Paste the job description here..."
+              rows={14}
+              style={{ minHeight: '320px' }}
             />
           </div>
         </div>
 
-        {/* Options & Action Footer */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px',
-          paddingTop: '16px',
-          borderTop: '1px solid var(--border-subtle)'
-        }}>
+        {/* ─── Footer: options + action ─── */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingTop: '16px',
+            borderTop: '1px solid var(--border-default)',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={includeSimulations}
-                onChange={(e) => setIncludeSimulations(e.target.checked)}
-              />
-              <span>What-If Simulations</span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={includeEvidence}
-                onChange={(e) => setIncludeEvidence(e.target.checked)}
-              />
-              <span>Evidence Trace</span>
-            </label>
+            {[
+              { label: 'What-If Simulations', value: includeSimulations, set: setIncludeSimulations },
+              { label: 'Evidence Trace', value: includeEvidence, set: setIncludeEvidence },
+            ].map(({ label, value, set }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => set(!value)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  color: value ? 'var(--text-1)' : 'var(--text-4)',
+                  fontFamily: 'var(--font-sans)',
+                  transition: 'color var(--duration-fast) var(--ease-out)',
+                }}
+              >
+                <div
+                  style={{
+                    width: '32px',
+                    height: '18px',
+                    borderRadius: 'var(--radius-full)',
+                    background: value ? 'var(--accent-stronger)' : 'var(--surface-4)',
+                    position: 'relative',
+                    transition: 'background var(--duration-fast) var(--ease-out)',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '50%',
+                      background: '#fff',
+                      position: 'absolute',
+                      top: '2px',
+                      left: value ? '16px' : '2px',
+                      transition: 'left var(--duration-fast) var(--ease-out)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                    }}
+                  />
+                </div>
+                {label}
+              </button>
+            ))}
           </div>
 
           <button
             type="submit"
             className="btn-primary"
-            disabled={loading || (inputMode === 'text' ? !resumeText || !jdText : !resumeFile || !jdText)}
-            style={{ opacity: loading ? 0.7 : 1 }}
+            disabled={loading || !canSubmit}
+            style={{ fontSize: '14px', padding: '10px 24px' }}
           >
             {loading ? (
-              <>Running Intelligence Pipeline...</>
+              <>
+                <span className="skeleton" style={{ width: '14px', height: '14px', borderRadius: '50%' }} />
+                Analyzing...
+              </>
             ) : (
               <>
-                <Sparkles size={18} />
-                Run Intelligence Analysis
+                Run Analysis
+                <ArrowRight size={15} />
               </>
             )}
           </button>
