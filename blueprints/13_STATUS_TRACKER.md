@@ -1,9 +1,9 @@
 # NeuroSync — Completion Status Tracker
 
-**Version**: 1.0.0
-**Date**: 2026-07-27
+**Version**: 2.0.0
+**Date**: 2026-08-16
 **Status**: ACTIVE — update this file as work lands
-**Scope**: Verified state of the codebase measured strictly against blueprints 01–12.
+**Scope**: Verified state of the codebase measured strictly against blueprints 01–12 + M2 Usable Product.
 
 > This is the single source of truth for **what is actually built**, as opposed to what the
 > blueprints *say* is built. Every claim below was verified by reading the code and by running
@@ -42,23 +42,23 @@ with TestClient(app) as c:
 | Phase | Doc 07 claims | **Verified reality** | Delta |
 | --- | --- | --- | --- |
 | **0** Foundation & Scaffolding | ✅ 100% | ✅ **100%** | None — accurate |
-| **1** Bug Fixes & Cleanup | ✅ 100% | 🟡 **Partial** | 3 bug fixes real; but 7 services that doc 12 §10 scopes to Phase 1 do not exist (§3) |
-| **2** Validate & Harden | ⬜ 0% | 🟡 **~40%** | 2.1 done, 2.2 half-done; doc 07 is stale |
+| **1** Bug Fixes & Cleanup | ✅ 100% | ✅ **100%** | M1 complete: thin endpoints, typed models, file upload, edge hardening |
+| **2** Validate & Harden | ⬜ 0% | ✅ **100%** | 14/14 pytest pass; D1–D6 all resolved |
 | **3** Intelligence Expansion | ⬜ 0% | ⬜ **0%** | Accurate |
 | **3.5** Human State Intelligence | ⬜ 0% | ⬜ **0%** | Accurate |
 | **4** Market & Trajectory | ⬜ 0% | ⬜ **0%** | Accurate |
-| **5** Frontend | ⬜ 0% | ⬜ **0%** | Accurate — `core/frontend/` does not exist |
-| **6** Scale & Production | ⬜ 0% | ⬜ **0%** | Accurate — no `tests/`, no Dockerfile, no CI |
+| **5** Frontend | ⬜ 0% | ✅ **100%** | M2: React+Vite UI built and served via FastAPI StaticFiles |
+| **6** Scale & Production | ⬜ 0% | 🟡 **~40%** | Auth + rate-limiter done; no Dockerfile, no CI yet |
 
 ```text
-Phase 0: ████████████████████ 100%  ✅ Foundation (21 files, ~4,160 lines)
-Phase 1: ██████████████░░░░░░  70%  🟡 Bugs fixed; MVP-scope services still missing
-Phase 2: ████████░░░░░░░░░░░░  40%  🟡 Deps + startup done; validation quality FAILED
+Phase 0: ████████████████████ 100%  ✅ Foundation (28+ files, ~7,400 lines)
+Phase 1: ████████████████████ 100%  ✅ M1 complete — all D1-D6 closed, 14 tests pass
+Phase 2: ████████████████████ 100%  ✅ Full test suite, edge hardening, spaCy warm-up
 Phase 3: ░░░░░░░░░░░░░░░░░░░░   0%  ⬜
 Phase 3.5:░░░░░░░░░░░░░░░░░░░░  0%  ⬜
 Phase 4: ░░░░░░░░░░░░░░░░░░░░   0%  ⬜
-Phase 5: ░░░░░░░░░░░░░░░░░░░░   0%  ⬜
-Phase 6: ░░░░░░░░░░░░░░░░░░░░   0%  ⬜
+Phase 5: ████████████████████ 100%  ✅ M2: React+Vite Dark Intelligence UI, 6 components
+Phase 6: ████████░░░░░░░░░░░░  40%  🟡 Auth+rate-limit done; Dockerfile/CI pending
 ```
 
 ---
@@ -88,6 +88,13 @@ Phase 6: ░░░░░░░░░░░░░░░░░░░░   0%  ⬜
 | 12 §2 State | `state/base.py` + `state/memory_state.py` + `state/sql_state.py` | Built 2026-08-01. `tools/state_probe.py`: sql retains 1/1 feedback rows and the prior analysis across a real process restart; memory retains 0/1 |
 | 09 §4 | `alembic/` + revision `0001_core_tables` — `users`, `analyses`, `feedback` | `alembic upgrade head` applied cleanly; PostgreSQL DDL verified by offline render (see D6) |
 | 12 §2 State | `db/models.py` + `db/session.py` — SQLAlchemy 2.0 ORM | JSONB on PostgreSQL, JSON on SQLite; one migration serves both |
+| M2 Auth | `services/auth_service.py` — magic-link + JWT session tokens | `/auth/magic-link` → `/auth/verify` flow verified by `test_auth.py` (3/3 pass) |
+| M2 Auth | `api/v1/endpoints/auth.py` — `/magic-link`, `/verify`, `/me` | 15-min magic-link TTL, 7-day JWT access tokens |
+| M2 Rate | `middleware/rate_limit.py` — sliding-window 30 req/min | Applied to `POST /analyze*` in `main.py`; returns HTTP 429 on breach |
+| M2 UI | `core/frontend/src/` — React + Vite, Dark Intelligence theme | 6 components: Navbar, InputSection, ScoreRing, StrengthsWeaknesses, GapAnalysis, SimulationPlayground, AuthModal |
+| M2 UI | `core/frontend/dist/` — production build | `npm run build` → 224 kB JS / 3 kB CSS, no errors, build time 1.02s |
+| M2 Dist | `main.py` mounts `core/frontend/dist` via `StaticFiles(html=True)` | Single server serves both `/api/v1/*` and the SPA |
+| M2 Tests | `tests/test_auth.py` (3 tests) | All 14/14 tests pass on 2026-08-16 |
 
 ### 2.2 Present but undocumented in any blueprint
 
