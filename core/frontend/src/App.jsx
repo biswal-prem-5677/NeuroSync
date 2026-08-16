@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import InputSection from './components/InputSection';
+import CameraMonitor from './components/CameraMonitor';
 import ScoreRing from './components/ScoreRing';
 import StrengthsWeaknesses from './components/StrengthsWeaknesses';
 import GapAnalysis from './components/GapAnalysis';
 import SimulationPlayground from './components/SimulationPlayground';
 import AuthModal from './components/AuthModal';
 import { AlertTriangle, ArrowUpRight } from 'lucide-react';
+
 
 export default function App() {
   const [loading, setLoading] = useState(false);
@@ -137,7 +139,11 @@ export default function App() {
         {/* Input & Upload Panel */}
         <InputSection onAnalyze={handleAnalyze} loading={loading} />
 
+        {/* Camera Perception & Emotion Telemetry Monitor (Pillar 1) */}
+        <CameraMonitor />
+
         {/* Results Container */}
+
         {analysisResult && (
           <div>
             <ScoreRing
