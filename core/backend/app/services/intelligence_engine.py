@@ -20,6 +20,8 @@ from app.models.domain import (
 from app.models.enums import FitLevel, GapPriority, SkillCategory
 from app.services.requirement_resolver import CoverageResolver
 from app.services.skill_gap_analyzer import GapAnalysisResult
+from app.services.reasoning_engine import ReasoningEngine
+from app.services.insights_engine import InsightsEngine
 from app.state.base import AnalysisRecord, FeedbackRecord, FeedbackStats, StateBackend
 from app.utils.skill_taxonomy import SkillTaxonomy
 
@@ -125,6 +127,8 @@ class IntelligenceEngine:
         extractor=None,
         gap_analyzer=None,
         semantic_engine=None,
+        reasoning_engine: Optional[ReasoningEngine] = None,
+        insights_engine: Optional[InsightsEngine] = None,
     ):
         self._config = config
         self._taxonomy = taxonomy
@@ -140,6 +144,9 @@ class IntelligenceEngine:
         self._extractor = extractor
         self._gap_analyzer = gap_analyzer
         self._semantic_engine = semantic_engine
+        # Phase 3 — intelligence layer engines (stateless, always available)
+        self._reasoning_engine = reasoning_engine or ReasoningEngine()
+        self._insights_engine = insights_engine or InsightsEngine()
 
     # =========================================================================
     # FULL PIPELINE — doc 12 Rule 1: this is the ONLY orchestrator
@@ -200,6 +207,34 @@ class IntelligenceEngine:
             gap_result=gap_result,
         )
 
+        # ── Step 4b: Reasoning (Phase 3.1) ──────────────────────
+        reasoning_output = self._reasoning_engine.synthesize(
+            overall_score=decision.overall_score,
+            fit_level=decision.fit_level.value,
+            recommendation=decision.recommendation.value,
+            confidence=decision.confidence,
+            shortlist_probability=decision.shortlist_probability,
+            scoring=decision.scoring,
+            resume_result=resume_result,
+            jd_result=jd_result,
+            gap_result=gap_result,
+            strengths=decision.strengths,
+            weaknesses=decision.weaknesses,
+            semantic_score=semantic_score,
+        )
+        # Enrich decision.reasoning with the synthesized summary
+        decision = decision.model_copy(update={"reasoning": reasoning_output.to_single_paragraph()})
+
+        # ── Step 4c: Insights SWOT (Phase 3.2) ──────────────────
+        insights_result = self._insights_engine.generate(
+            overall_score=decision.overall_score,
+            fit_level=decision.fit_level.value,
+            resume_result=resume_result,
+            jd_result=jd_result,
+            gap_result=gap_result,
+            semantic_score=semantic_score,
+        )
+
         elapsed = (time.perf_counter() - start) * 1000
 
         # ── Step 5: Assemble response ───────────────────────────
@@ -213,6 +248,8 @@ class IntelligenceEngine:
             include_simulations=include_simulations,
             include_evidence=include_evidence,
             elapsed=elapsed,
+            reasoning_output=reasoning_output,
+            insights_result=insights_result,
         )
 
         # ── Step 6: Persist ─────────────────────────────────────
@@ -223,7 +260,7 @@ class IntelligenceEngine:
     def _build_response(
         self, *, analysis_id, decision, resume_result, jd_result,
         gap_result, semantic_result, include_simulations, include_evidence,
-        elapsed,
+        elapsed, reasoning_output=None, insights_result=None,
     ) -> dict:
         """Assemble the full response dict from all pipeline outputs."""
         response = {
@@ -336,6 +373,17 @@ class IntelligenceEngine:
                     for s in semantic_result.section_scores[:5]
                 ],
             }
+
+        # Phase 3.1 — Structured reasoning narrative
+        if reasoning_output is not None:
+            response["reasoning"] = reasoning_output.to_dict()
+
+        # Phase 3.2 — SWOT insights
+        if insights_result is not None:
+            response["insights"] = insights_result.to_dict()
+            # Upgrade strengths/weaknesses with evidence-backed insight claims
+            response["strengths"] = insights_result.top_strengths_as_list() or decision.strengths
+            response["weaknesses"] = insights_result.top_weaknesses_as_list() or decision.weaknesses
 
         response["meta"] = {
             "processing_time_ms": round(elapsed, 1),

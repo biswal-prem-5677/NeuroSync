@@ -6,7 +6,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from app.api.schemas import FeedbackRequest
-from app.api.deps import get_intelligence_engine, get_state_backend
+from app.api.deps import get_intelligence_engine, get_state_backend, get_feedback_processor
 
 router = APIRouter()
 
@@ -81,3 +81,20 @@ async def record_feedback(body: FeedbackRequest):
         "decision_found": found,
         "feedback_stats": intelligence.get_feedback_stats().as_response(),
     }
+
+
+@router.post("/feedback/process", summary="Run feedback learning loop (Phase 3.3)")
+async def process_feedback():
+    """
+    Run the FeedbackProcessor learning loop over all accumulated feedback.
+
+    Returns:
+    - Drift report: predicted vs actual shortlist probability
+    - Proposed weight adjustments
+    - New skills discovered
+    - Calibration recommendation
+    """
+    processor = get_feedback_processor()
+    state = get_state_backend()
+    result = await processor.process(state)
+    return result.to_dict()

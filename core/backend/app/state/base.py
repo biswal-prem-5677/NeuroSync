@@ -154,3 +154,7 @@ class StateBackend(ABC):
     @abstractmethod
     def count_feedback(self) -> int:
         """Total feedback rows — drives the recalibration threshold."""
+
+    @abstractmethod
+    def list_feedback(self, limit: int = 500) -> list[FeedbackRecord]:
+        """Return up to `limit` feedback records (newest-first). Used by FeedbackProcessor."""

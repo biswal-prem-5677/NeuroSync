@@ -108,6 +108,33 @@ built.
 | Modern Web UI (`core/frontend/` — React + Vite, Dark Intelligence theme) | 06, 14 §2 | ✅ 2026-08-16 |
 | Unified Backend Distribution (FastAPI mounts `core/frontend/dist`) | 07, 14 §2 | ✅ 2026-08-16 |
 
+#### Phase 3 — Intelligence Expansion (v1.5)
+| Item | Source | State |
+| --- | --- | --- |
+| `ReasoningEngine` — evidence-backed multi-paragraph reasoning | 07 §3.1 | ✅ 2026-08-16 |
+| `InsightsEngine` — SWOT-style structured analysis | 07 §3.2 | ✅ 2026-08-16 |
+| `FeedbackProcessor` — learning loop & drift detection | 07 §3.3 | ✅ 2026-08-16 |
+| StateBackend `list_feedback` interface extension | 07 §3.4 | ✅ 2026-08-16 |
+
+#### Phase 3.5 — Human State Intelligence (v1.8)
+| Item | Source | State |
+| --- | --- | --- |
+| Observation models (`ObservationSource`, `AgentObservation`) | 07 §3.5.1 | ✅ 2026-08-16 |
+| CareerState & predictions model (`StatePrediction`, `LearningSession`) | 07 §3.5.1 | ✅ 2026-08-16 |
+| `HumanStateEngine` — 8-source observation signal aggregator | 07 §3.5.2 | ✅ 2026-08-16 |
+| `AgentDecisionEngine` — proactive learning & career recommendations | 07 §3.5.4 | ✅ 2026-08-16 |
+| Behavior API endpoints (`/behavior/session/*`, `/behavior/event`, `/behavior/state`) | 07 §3.5.5 | ✅ 2026-08-16 |
+
+#### Phase 4 — Market & Trajectory (v2.0)
+| Item | Source | State |
+| --- | --- | --- |
+| `MarketIntelligenceEngine` — demand trends, salary ranges, hiring velocity | 07 §4.1 | ✅ 2026-08-16 |
+| `CareerTrajectoryEngine` — progression tracking & readiness forecasting | 07 §4.2 | ✅ 2026-08-16 |
+| `AdaptiveScorer` — per-role weight profiles & dynamic modulation | 07 §4.3 | ✅ 2026-08-16 |
+| Market & Trajectory API endpoints (`/market/demand`, `/market/salary`, `/market/velocity`, `/market/trajectory`) | 07 §4.1, §4.2 | ✅ 2026-08-16 |
+
+
+
 
 Work that is **blocked on the owner** rather than on engineering — external accounts,
 credentials, legal artifacts, people, and doc 15 §23's open questions — lives in

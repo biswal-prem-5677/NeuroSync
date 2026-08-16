@@ -20,6 +20,14 @@ _gap_analyzer = None
 _semantic_engine = None
 _intelligence_engine = None
 _state_backend = None
+_feedback_processor = None
+_human_state_engine = None
+_agent_decision_engine = None
+_market_intelligence_engine = None
+_career_trajectory_engine = None
+_adaptive_scorer = None
+
+
 
 
 # ─── State Backend ───────────────────────────────────────────────────────────
@@ -198,3 +206,62 @@ def get_intelligence_engine():
             semantic_engine=get_semantic_engine(),
         )
     return _intelligence_engine
+
+
+def get_feedback_processor():
+    """Return the FeedbackProcessor singleton (Phase 3.3 learning loop)."""
+    from app.services.feedback_processor import FeedbackProcessor
+    global _feedback_processor
+    if _feedback_processor is None:
+        _feedback_processor = FeedbackProcessor(
+            config=get_settings(),
+            taxonomy=get_taxonomy(),
+        )
+    return _feedback_processor
+
+
+def get_human_state_engine():
+    """Return the HumanStateEngine singleton (Phase 3.5 human intelligence)."""
+    from app.services.human_state_engine import HumanStateEngine
+    global _human_state_engine
+    if _human_state_engine is None:
+        _human_state_engine = HumanStateEngine()
+    return _human_state_engine
+
+
+def get_agent_decision_engine():
+    """Return the AgentDecisionEngine singleton (Phase 3.5 career decisions)."""
+    from app.services.agent_decision_engine import AgentDecisionEngine
+    global _agent_decision_engine
+    if _agent_decision_engine is None:
+        _agent_decision_engine = AgentDecisionEngine()
+    return _agent_decision_engine
+
+
+def get_market_intelligence_engine():
+    """Return the MarketIntelligenceEngine singleton (Phase 4.1 market data)."""
+    from app.services.market_intelligence_engine import MarketIntelligenceEngine
+    global _market_intelligence_engine
+    if _market_intelligence_engine is None:
+        _market_intelligence_engine = MarketIntelligenceEngine()
+    return _market_intelligence_engine
+
+
+def get_career_trajectory_engine():
+    """Return the CareerTrajectoryEngine singleton (Phase 4.2 trajectory forecasting)."""
+    from app.services.career_trajectory_engine import CareerTrajectoryEngine
+    global _career_trajectory_engine
+    if _career_trajectory_engine is None:
+        _career_trajectory_engine = CareerTrajectoryEngine()
+    return _career_trajectory_engine
+
+
+def get_adaptive_scorer():
+    """Return the AdaptiveScorer singleton (Phase 4.3 per-role weights)."""
+    from app.services.adaptive_scorer import AdaptiveScorer
+    global _adaptive_scorer
+    if _adaptive_scorer is None:
+        _adaptive_scorer = AdaptiveScorer()
+    return _adaptive_scorer
+
+

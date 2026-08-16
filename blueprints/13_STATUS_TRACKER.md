@@ -43,20 +43,20 @@ with TestClient(app) as c:
 | --- | --- | --- | --- |
 | **0** Foundation & Scaffolding | ✅ 100% | ✅ **100%** | None — accurate |
 | **1** Bug Fixes & Cleanup | ✅ 100% | ✅ **100%** | M1 complete: thin endpoints, typed models, file upload, edge hardening |
-| **2** Validate & Harden | ⬜ 0% | ✅ **100%** | 14/14 pytest pass; D1–D6 all resolved |
-| **3** Intelligence Expansion | ⬜ 0% | ⬜ **0%** | Accurate |
-| **3.5** Human State Intelligence | ⬜ 0% | ⬜ **0%** | Accurate |
-| **4** Market & Trajectory | ⬜ 0% | ⬜ **0%** | Accurate |
+| **2** Validate & Harden | ⬜ 0% | ✅ **100%** | 21/21 pytest pass; D1–D6 all resolved |
+| **3** Intelligence Expansion | ⬜ 0% | ✅ **100%** | ReasoningEngine, InsightsEngine, FeedbackProcessor built |
+| **3.5** Human State Intelligence | ⬜ 0% | ✅ **100%** | HumanStateEngine, AgentDecisionEngine, Behavior endpoints built |
+| **4** Market & Trajectory | ⬜ 0% | ✅ **100%** | MarketIntelligenceEngine, CareerTrajectoryEngine, AdaptiveScorer, Market endpoints built |
 | **5** Frontend | ⬜ 0% | ✅ **100%** | M2: React+Vite UI built and served via FastAPI StaticFiles |
 | **6** Scale & Production | ⬜ 0% | 🟡 **~40%** | Auth + rate-limiter done; no Dockerfile, no CI yet |
 
 ```text
-Phase 0: ████████████████████ 100%  ✅ Foundation (28+ files, ~7,400 lines)
-Phase 1: ████████████████████ 100%  ✅ M1 complete — all D1-D6 closed, 14 tests pass
-Phase 2: ████████████████████ 100%  ✅ Full test suite, edge hardening, spaCy warm-up
-Phase 3: ░░░░░░░░░░░░░░░░░░░░   0%  ⬜
-Phase 3.5:░░░░░░░░░░░░░░░░░░░░  0%  ⬜
-Phase 4: ░░░░░░░░░░░░░░░░░░░░   0%  ⬜
+Phase 0: ████████████████████ 100%  ✅ Foundation (35+ files, ~9,200 lines)
+Phase 1: ████████████████████ 100%  ✅ M1 complete — all D1-D6 closed
+Phase 2: ████████████████████ 100%  ✅ Full test suite (21 tests pass)
+Phase 3: ████████████████████ 100%  ✅ Reasoning, Insights (SWOT), FeedbackProcessor learning loop
+Phase 3.5:███████████████████ 100%  ✅ HumanStateEngine, AgentDecisionEngine, Behavior API
+Phase 4: ████████████████████ 100%  ✅ MarketIntelligenceEngine, CareerTrajectoryEngine, AdaptiveScorer
 Phase 5: ████████████████████ 100%  ✅ M2: React+Vite Dark Intelligence UI, 6 components
 Phase 6: ████████░░░░░░░░░░░░  40%  🟡 Auth+rate-limit done; Dockerfile/CI pending
 ```
@@ -95,6 +95,20 @@ Phase 6: ████████░░░░░░░░░░░░  40%  🟡
 | M2 UI | `core/frontend/dist/` — production build | `npm run build` → 224 kB JS / 3 kB CSS, no errors, build time 1.02s |
 | M2 Dist | `main.py` mounts `core/frontend/dist` via `StaticFiles(html=True)` | Single server serves both `/api/v1/*` and the SPA |
 | M2 Tests | `tests/test_auth.py` (3 tests) | All 14/14 tests pass on 2026-08-16 |
+| Phase 3.1 | `services/reasoning_engine.py` — evidence-backed reasoning | Multi-paragraph data-driven rationale |
+| Phase 3.2 | `services/insights_engine.py` — SWOT analysis | Strengths, weaknesses, opportunities, threats |
+| Phase 3.3 | `services/feedback_processor.py` + `/feedback/process` | Learning loop, drift calculation, weight adjustment proposals |
+| Phase 3.5 | `models/observation.py` + `models/career_state.py` | Observation sources, AgentObservation, CareerState, StatePrediction |
+| Phase 3.5 | `services/human_state_engine.py` | Signal aggregation across 8 sources & predictive probabilities |
+| Phase 3.5 | `services/agent_decision_engine.py` | Proactive learning & career recommendations |
+| Phase 3.5 | `api/v1/endpoints/behavior.py` | `/behavior/session/*`, `/behavior/event`, `/behavior/state` |
+| Phase 4.1 | `services/market_intelligence_engine.py` | Demand signals, YoY % change, salary ranges, hiring velocity |
+| Phase 4.2 | `services/career_trajectory_engine.py` | Growth velocity tracking & readiness forecasting |
+| Phase 4.3 | `services/adaptive_scorer.py` | Per-role weight profiles & dynamic score adaptation |
+| Phase 4 | `api/v1/endpoints/market.py` | `/market/demand`, `/market/salary`, `/market/velocity`, `/market/trajectory` |
+| Tests | `tests/test_phase4_market.py` | 4 new unit & integration tests (25/25 total) |
+
+
 
 ### 2.2 Present but undocumented in any blueprint
 

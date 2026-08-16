@@ -93,3 +93,8 @@ class MemoryState(StateBackend):
     def count_feedback(self) -> int:
         with self._lock:
             return len(self._feedback)
+
+    def list_feedback(self, limit: int = 500) -> list[FeedbackRecord]:
+        with self._lock:
+            return list(reversed(self._feedback))[:limit]
+

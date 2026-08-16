@@ -193,3 +193,26 @@ class SqlState(StateBackend):
     def count_feedback(self) -> int:
         with self._session_factory() as session:          # type: ignore[misc]
             return session.scalar(select(func.count()).select_from(Feedback)) or 0
+
+    def list_feedback(self, limit: int = 500) -> list[FeedbackRecord]:
+        with self._session_factory() as session:          # type: ignore[misc]
+            rows = session.scalars(
+                select(Feedback).order_by(Feedback.created_at.desc()).limit(limit)
+            ).all()
+            return [
+                FeedbackRecord(
+                    feedback_id=r.id,
+                    analysis_id=r.analysis_id,
+                    outcome=r.outcome,
+                    user_notes=r.user_notes or "",
+                    score=r.score,
+                    shortlist_probability=r.shortlist_probability,
+                    confidence=r.confidence,
+                    recommendation=r.recommendation,
+                    fit_level=r.fit_level,
+                    is_processed=r.is_processed,
+                    created_at=r.created_at,
+                )
+                for r in rows
+            ]
+
