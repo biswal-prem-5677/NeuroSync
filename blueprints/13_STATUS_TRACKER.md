@@ -48,17 +48,17 @@ with TestClient(app) as c:
 | **3.5** Human State Intelligence | ⬜ 0% | ✅ **100%** | HumanStateEngine, AgentDecisionEngine, Behavior endpoints built |
 | **4** Market & Trajectory | ⬜ 0% | ✅ **100%** | MarketIntelligenceEngine, CareerTrajectoryEngine, AdaptiveScorer, Market endpoints built |
 | **5** Frontend | ⬜ 0% | ✅ **100%** | M2: React+Vite UI built and served via FastAPI StaticFiles |
-| **6** Scale & Production | ⬜ 0% | 🟡 **~40%** | Auth + rate-limiter done; no Dockerfile, no CI yet |
+| **6** Scale & Production | ⬜ 0% | ✅ **100%** | Production Docker, docker-compose, CI/CD, Render deploy spec built |
 
 ```text
-Phase 0: ████████████████████ 100%  ✅ Foundation (35+ files, ~9,200 lines)
+Phase 0: ████████████████████ 100%  ✅ Foundation (40+ files, ~11,000 lines)
 Phase 1: ████████████████████ 100%  ✅ M1 complete — all D1-D6 closed
-Phase 2: ████████████████████ 100%  ✅ Full test suite (21 tests pass)
+Phase 2: ████████████████████ 100%  ✅ Full test suite (25 tests pass)
 Phase 3: ████████████████████ 100%  ✅ Reasoning, Insights (SWOT), FeedbackProcessor learning loop
 Phase 3.5:███████████████████ 100%  ✅ HumanStateEngine, AgentDecisionEngine, Behavior API
 Phase 4: ████████████████████ 100%  ✅ MarketIntelligenceEngine, CareerTrajectoryEngine, AdaptiveScorer
 Phase 5: ████████████████████ 100%  ✅ M2: React+Vite Dark Intelligence UI, 6 components
-Phase 6: ████████░░░░░░░░░░░░  40%  🟡 Auth+rate-limit done; Dockerfile/CI pending
+Phase 6: ████████████████████ 100%  ✅ Production Docker, docker-compose, CI/CD, Render deploy spec
 ```
 
 ---

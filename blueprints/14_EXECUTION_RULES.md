@@ -125,13 +125,18 @@ built.
 | `AgentDecisionEngine` — proactive learning & career recommendations | 07 §3.5.4 | ✅ 2026-08-16 |
 | Behavior API endpoints (`/behavior/session/*`, `/behavior/event`, `/behavior/state`) | 07 §3.5.5 | ✅ 2026-08-16 |
 
-#### Phase 4 — Market & Trajectory (v2.0)
+#### Phase 6 — Scale & Production (v2.0)
 | Item | Source | State |
 | --- | --- | --- |
 | `MarketIntelligenceEngine` — demand trends, salary ranges, hiring velocity | 07 §4.1 | ✅ 2026-08-16 |
 | `CareerTrajectoryEngine` — progression tracking & readiness forecasting | 07 §4.2 | ✅ 2026-08-16 |
 | `AdaptiveScorer` — per-role weight profiles & dynamic modulation | 07 §4.3 | ✅ 2026-08-16 |
 | Market & Trajectory API endpoints (`/market/demand`, `/market/salary`, `/market/velocity`, `/market/trajectory`) | 07 §4.1, §4.2 | ✅ 2026-08-16 |
+| Multi-stage `Dockerfile` (Node.js frontend build + Python 3.11 backend) | 07 §6 | ✅ 2026-08-16 |
+| Multi-container orchestration (`docker-compose.yml` with PostgreSQL) | 07 §6 | ✅ 2026-08-16 |
+| GitHub Actions CI/CD pipeline (`.github/workflows/ci.yml`) | 07 §6 | ✅ 2026-08-16 |
+| Cloud Deployment Spec (`render.yaml` for 1-click HTTPS host) | 07 §6 | ✅ 2026-08-16 |
+
 
 
 

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: neurosync
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: NEUROSYNC_STATE_BACKEND
+        value: memory
+      - key: NEUROSYNC_SECRET_KEY
+        generateValue: true
