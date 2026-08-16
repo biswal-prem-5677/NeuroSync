@@ -113,12 +113,20 @@ def create_app() -> FastAPI:
     # Mount frontend static files if built
     import os
     from fastapi.staticfiles import StaticFiles
-    frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../frontend/dist"))
-    if os.path.isdir(frontend_dist):
+    frontend_dist_candidates = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/dist")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../frontend/dist")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend/dist")),
+    ]
+    frontend_dist = next((p for p in frontend_dist_candidates if os.path.isdir(p)), None)
+    if frontend_dist:
         app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
         logger.info("Mounted frontend static files from %s", frontend_dist)
+    else:
+        logger.warning("Frontend dist directory not found in candidates: %s", frontend_dist_candidates)
 
     return app
+
 
 
 
